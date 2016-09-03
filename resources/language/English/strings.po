@@ -1,0 +1,39 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: TV Addons Addons\n"
+"POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: English\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgctxt "#30000"
+msgid "Configuration required"
+msgstr ""
+
+msgctxt "#30001"
+msgid "The audiobook directory is not set!"
+msgstr ""
+
+msgctxt "#30002"
+msgid "General"
+msgstr ""
+
+msgctxt "#30003"
+msgid "Advanced"
+msgstr ""
+
+msgctxt "#30004"
+msgid "Audiobook directory"
+msgstr ""
+
+msgctxt "#30005"
+msgid "Enable debug logging"
+msgstr ""
+
+msgctxt "#30006"
+msgid "Scan now"
+msgstr ""
