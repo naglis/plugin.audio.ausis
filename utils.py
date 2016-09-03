@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import os
+import re
 import urlparse
+
+
+SUITABLE_FILE = re.compile(r'(?i)^.*\.(mp3|ogg|flac|wma)$')
 
 
 def decode_arg(arg):
@@ -26,3 +31,10 @@ def parse_query(query, defaults=None):
         else:
             d[decode_arg(key)] = decode_list(values)
     return d
+
+
+def scan(path):
+    for subdir, dirs, files in os.walk(path):
+        for fn in files:
+            if SUITABLE_FILE.match(fn):
+                yield os.path.join(path, subdir, fn)
