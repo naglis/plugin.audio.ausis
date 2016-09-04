@@ -29,6 +29,9 @@ class Ausis(object):
             self.base_url, urllib.urlencode(utils.encode_values(kwargs))
         )
 
+    def _t(self, string_id):
+        return self.addon.getLocalizedString(string_id)
+
     @property
     def db_path(self):
         kodi_db_dir = kodi.translatePath('special://database')
@@ -70,6 +73,7 @@ class Ausis(object):
             'artist': audiobook[b'author'],
             'title': item[b'title'],
             'genre': 'Audiobook',
+            'comment': 'ausis:item:%d' % item[b'id'],
         })
         li.setArt({
             'thumb': cover,
@@ -84,10 +88,7 @@ class Ausis(object):
         db = database.AudioBookDB.get_db(self.db_path)
         audiobooks = db.get_all_audiobooks()
         if not audiobooks and not directory:
-            kodigui.Dialog().ok(
-                self.addon.getLocalizedString(30000),
-                self.addon.getLocalizedString(30001),
-            )
+            kodigui.Dialog().ok(self._t(30000), self._t(30001))
             return
         for audiobook in audiobooks:
             cover = audiobook[b'cover_path']
@@ -116,6 +117,19 @@ class Ausis(object):
             fanart = audiobook[b'fanart_path']
             if fanart:
                 fanart = os.path.join(audiobook[b'path'], fanart)
+            bookmark = db.get_audiobook_last_bookmark(audiobook_id)
+            if bookmark:
+                self.log(str(bookmark))
+                url = self._build_url(
+                    mode='resume', bookmark_id=bookmark[b'id'])
+                position = utils.format_duration(bookmark[b'position'])
+                li = kodigui.ListItem('Resume (%s)' % position)
+                kodiplugin.addDirectoryItem(
+                    handle=self.handle,
+                    url=url,
+                    listitem=li,
+                    isFolder=False,
+                )
             for item in items:
                 url = self._build_url(mode='play', audiofile_id=item[b'id'])
                 li = self._prepare_audiofile_listitem(audiobook, item)
@@ -145,21 +159,41 @@ class Ausis(object):
         else:
             self.log('No audiofile ID provided!', level=kodi.LOGERROR)
 
+    def mode_resume(self, args):
+        bookmark_id = args.get('bookmark_id')
+        db = database.AudioBookDB.get_db(self.db_path)
+        if bookmark_id:
+            bookmark = db.get_bookmark(bookmark_id)
+            if not bookmark:
+                return
+            audiofile_id = bookmark[b'audiofile_id']
+            audiobook, items = db.get_remaining_audiofiles(audiofile_id)
+            audiobook_path = audiobook[b'path']
+            playlist = kodi.PlayList(kodi.PLAYLIST_MUSIC)
+            playlist.clear()
+            for idx, item in enumerate(items):
+                li = self._prepare_audiofile_listitem(audiobook, item)
+                # if idx == 0:
+                    # li.setProperty(
+                        # 'StartOffset', '%.2f' % bookmark[b'position'])
+                url = os.path.join(audiobook_path, item[b'file_path'])
+                playlist.add(url, li)
+            player = kodi.Player()
+            player.play(playlist)
+            kodi.sleep(500)
+            player.seekTime(bookmark[b'position'])
+        else:
+            self.log('No bookmark ID provided!', level=kodi.LOGERROR)
+
     def mode_scan(self, args):
         directory = utils.decode_arg(
             self.addon.getSetting('audiobook_directory'))
         if not directory:
-            kodigui.Dialog().ok(
-                self.addon.getLocalizedString(30000),
-                self.addon.getLocalizedString(30001),
-            )
+            kodigui.Dialog().ok(self._t(30000), self._t(30001))
             return
 
         dialog = kodigui.DialogProgressBG()
-        dialog.create(
-            'ausis',
-            self.addon.getLocalizedString(30007),
-        )
+        dialog.create('ausis', self._t(30007))
 
         dirs, _ = map(utils.decode_list, kodivfs.listdir(directory))
         total_dirs = len(dirs)

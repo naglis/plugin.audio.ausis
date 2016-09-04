@@ -60,3 +60,9 @@ ifind_cover = functools.partial(
     iglob_ext, filenames=('cover', 'folder'), extensions=('jpg', 'png'))
 ifind_fanart = functools.partial(
     iglob_ext, filenames=('fanart', 'fan_art'), extensions=('jpg', 'png'))
+
+
+def format_duration(s):
+    m, s = divmod(s, 60)
+    h, m = divmod(m, 60)
+    return '%d:%02d:%02d' % (h, m, s)

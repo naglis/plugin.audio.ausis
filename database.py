@@ -172,3 +172,70 @@ ASC;'''
                 cr.execute(query, (audiobook_id, sequence))
                 items = cr.fetchall()
                 return audiobook, items
+
+    def add_bookmark(self, audiofile_id, position):
+        with contextlib.closing(self.get_conn()) as conn:
+            with conn:
+                cr = conn.cursor()
+                query = '''
+SELECT id, audiobook_id, position FROM bookmarks WHERE audiofile_id = ?;'''
+                cr.execute(query, (audiofile_id,))
+                result = cr.fetchone()
+
+                if result:
+                    # Update existing bookmark.
+                    bookmark_id, audiobook_id, old_position = result
+                    query = '''
+UPDATE bookmarks SET position = ? WHERE id = ?;'''
+                    cr.execute(query, (position, bookmark_id))
+                else:
+                    # Add new bookmark.
+                    query = '''
+SELECT audiobook_id FROM audiofiles WHERE id = ?;'''
+                    cr.execute(query, (audiofile_id,))
+                    result = cr.fetchone()
+                    if not result:
+                        return False
+                    audiobook_id, = result
+                    query = '''
+INSERT INTO bookmarks (
+    audiofile_id,
+    audiobook_id,
+    position
+) VALUES (?, ?, ?);'''
+                    cr.execute(query, (audiofile_id, audiobook_id, position))
+                    bookmark_id = cr.lastrowid
+                return bookmark_id
+
+    def get_bookmark(self, bookmark_id):
+        with contextlib.closing(self.get_conn()) as conn:
+            with conn:
+                cr = conn.cursor()
+                query = 'SELECT * FROM bookmarks WHERE id = ?;'
+                cr.execute(query, (bookmark_id,))
+                result = cr.fetchone()
+                return result if result else None
+
+    def get_audiobook_last_bookmark(self, audiobook_id):
+        with contextlib.closing(self.get_conn()) as conn:
+            with conn:
+                cr = conn.cursor()
+                query = '''
+SELECT
+    *
+FROM
+    bookmarks AS b
+INNER JOIN
+    audiofiles AS a
+ON
+    a.id = b.audiofile_id
+WHERE
+    b.audiobook_id = ?
+ORDER BY
+    a.sequence DESC,
+    b.position DESC
+LIMIT
+    1;'''
+                cr.execute(query, (audiobook_id,))
+                result = cr.fetchone()
+                return result if result else None
