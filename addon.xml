@@ -7,6 +7,7 @@
 	<extension point="xbmc.python.pluginsource" library="addon.py">
 		<provides>audio</provides>
 	</extension>
+    <extension point="xbmc.service" library="service.py" start="login"/>
 	<extension point="xbmc.addon.metadata">
 		<summary lang="en">Audiobook support</summary>
         <description lang="en">Can't live without audiobooks? Love Kodi? Now these two awesome things can go together!</description>

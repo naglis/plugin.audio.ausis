@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS audiobooks (
     narrator VARCHAR(256),
     path VARCHAR NOT NULL,
     cover_path VARCHAR,
+    fanart_path VARCHAR,
     summary TEXT,
     date_added DATETIME,
     PRIMARY KEY (id),
@@ -62,7 +63,7 @@ CREATE TABLE IF NOT EXISTS bookmarks (
 );''')
 
     def add_audiobook(self, author, title, path, files, narrator=None,
-                      cover_path=None, summary=None):
+                      cover_path=None, fanart_path=None, summary=None):
         with contextlib.closing(self.get_conn()) as conn:
             with conn:
                 cr = conn.cursor()
@@ -73,12 +74,14 @@ INSERT INTO audiobooks (
     narrator,
     path,
     cover_path,
+    fanart_path,
     summary,
     date_added
 ) VALUES (
-    ?, ?, ?, ?, ?, ?, DATETIME('now')
+    ?, ?, ?, ?, ?, ?, ?, DATETIME('now')
 );'''
-                data = author, title, narrator, path, cover_path, summary
+                data = (author, title, narrator, path, cover_path, fanart_path,
+                        summary)
                 cr.execute(query, data)
                 audiobook_id = cr.lastrowid
 
@@ -136,5 +139,36 @@ LIMIT
                 query = '''
 SELECT * FROM audiofiles WHERE audiobook_id = ? ORDER BY sequence ASC;'''
                 cr.execute(query, (audiobook_id,))
+                items = cr.fetchall()
+                return audiobook, items
+
+    def get_remaining_audiofiles(self, audiofile_id):
+        with contextlib.closing(self.get_conn()) as conn:
+            with conn:
+                query = '''
+SELECT audiobook_id, sequence  FROM audiofiles WHERE id = ?;'''
+                cr = conn.cursor()
+                cr.execute(query, (audiofile_id,))
+                result = cr.fetchone()
+                if not result:
+                    return None, []
+                audiobook_id, sequence = result
+                query = 'SELECT * FROM audiobooks WHERE id = ?;'
+                cr.execute(query, (audiobook_id,))
+                audiobook = cr.fetchone()
+
+                query = '''
+SELECT
+    *
+FROM
+    audiofiles
+WHERE
+    audiobook_id = ?
+AND
+    sequence >= ?
+ORDER BY
+    sequence
+ASC;'''
+                cr.execute(query, (audiobook_id, sequence))
                 items = cr.fetchall()
                 return audiobook, items

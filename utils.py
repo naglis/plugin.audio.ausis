@@ -42,10 +42,13 @@ def parse_query(query, defaults=None):
     return d
 
 
-def iglob_ext(path, extensions=None):
-    if not extensions:
-        raise ValueError('You must specify at least one extension!')
-    pattern = re.compile(r'(?i)^.*\.(%s)$' % '|'.join(extensions))
+def iglob_ext(path, filenames=None, extensions=None):
+    if extensions is None:
+        extensions = ('[a-z0-9]+',)
+    if filenames is None:
+        filenames = ('.+',)
+    pattern = re.compile(r'(?i)^(%s)\.(%s)$' % (
+        '|'.join(filenames), '|'.join(extensions)))
     for subdir, _, files in os.walk(path):
         for fn in files:
             if pattern.match(fn):
@@ -53,10 +56,7 @@ def iglob_ext(path, extensions=None):
 
 
 iscan = functools.partial(iglob_ext, extensions=('mp3', 'ogg', 'flac', 'wma'))
-
-
-def find_cover(path):
-    pattern = re.compile(r'(?i)^(folder|cover)')
-    for fn in iglob_ext(path, extensions=('png', 'jpg')):
-        if pattern.match(os.path.basename(fn)):
-            yield fn
+ifind_cover = functools.partial(
+    iglob_ext, filenames=('cover', 'folder'), extensions=('jpg', 'png'))
+ifind_fanart = functools.partial(
+    iglob_ext, filenames=('fanart', 'fan_art'), extensions=('jpg', 'png'))
