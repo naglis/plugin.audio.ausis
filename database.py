@@ -1,0 +1,140 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
+import contextlib
+import sqlite3
+
+
+class AudioBookDB(object):
+
+    def __init__(self, db_path):
+        self._db_path = db_path
+
+    @classmethod
+    def get_db(cls, db_path):
+        db = cls(db_path)
+        db.init_db()
+        return db
+
+    def get_conn(self):
+        conn = sqlite3.connect(self._db_path)
+        conn.row_factory = sqlite3.Row
+        conn.execute('PRAGMA foreign_keys;')
+        return conn
+
+    def init_db(self):
+        with contextlib.closing(self.get_conn()) as conn:
+            with conn:
+                cr = conn.cursor()
+                cr.executescript('''
+CREATE TABLE IF NOT EXISTS audiobooks (
+    id INTEGER NOT NULL,
+    title VARCHAR(256) NOT NULL,
+    author VARCHAR(256) NOT NULL,
+    narrator VARCHAR(256),
+    path VARCHAR NOT NULL,
+    cover_path VARCHAR,
+    summary TEXT,
+    date_added DATETIME,
+    PRIMARY KEY (id),
+    UNIQUE (id)
+);
+CREATE TABLE IF NOT EXISTS audiofiles (
+    id INTEGER NOT NULL,
+    audiobook_id INTEGER,
+    title VARCHAR,
+    file_path VARCHAR NOT NULL, -- Relative to audiobook.path
+    duration INTEGER,
+    sequence INTEGER NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE (id),
+    FOREIGN KEY(audiobook_id) REFERENCES audiobooks (id) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS bookmarks (
+    id INTEGER NOT NULL,
+    audiofile_id INTEGER,
+    audiobook_id INTEGER,
+    position INTEGER,
+    PRIMARY KEY (id),
+    UNIQUE (id),
+    FOREIGN KEY(audiofile_id) REFERENCES audiofiles (id) ON DELETE CASCADE,
+    FOREIGN KEY(audiobook_id) REFERENCES audiobooks (id) ON DELETE CASCADE
+);''')
+
+    def add_audiobook(self, author, title, path, files, narrator=None,
+                      cover_path=None, summary=None):
+        with contextlib.closing(self.get_conn()) as conn:
+            with conn:
+                cr = conn.cursor()
+                query = '''
+INSERT INTO audiobooks (
+    author,
+    title,
+    narrator,
+    path,
+    cover_path,
+    summary,
+    date_added
+) VALUES (
+    ?, ?, ?, ?, ?, ?, DATETIME('now')
+);'''
+                data = author, title, narrator, path, cover_path, summary
+                cr.execute(query, data)
+                audiobook_id = cr.lastrowid
+
+                audiofile_ids = []
+                for sequence, item in enumerate(files):
+                    title, file_path, duration = item
+                    query = '''
+INSERT INTO audiofiles (
+    audiobook_id,
+    title,
+    file_path,
+    duration,
+    sequence
+) VALUES (
+    ?, ?, ?, ?, ?
+);'''
+                    data = audiobook_id, title, file_path, duration, sequence
+                    cr.execute(query, data)
+                    audiofile_ids.append(cr.lastrowid)
+
+                return {audiobook_id: audiofile_ids}
+
+    def audiobook_exists(self, subdir):
+        with contextlib.closing(self.get_conn()) as conn:
+            with conn:
+                cr = conn.cursor()
+                query = '''
+SELECT
+    *
+FROM
+    audiobooks
+WHERE
+    path = ?
+LIMIT
+    1;'''
+                cr.execute(query, (subdir,))
+                res = cr.fetchone()
+                return bool(res)
+
+    def get_all_audiobooks(self):
+        with contextlib.closing(self.get_conn()) as conn:
+            with conn:
+                query = 'SELECT * FROM audiobooks;'
+                cr = conn.cursor()
+                cr.execute(query)
+                return cr.fetchall()
+
+    def get_audiobook(self, audiobook_id):
+        with contextlib.closing(self.get_conn()) as conn:
+            with conn:
+                query = 'SELECT * FROM audiobooks WHERE id = ?;'
+                cr = conn.cursor()
+                cr.execute(query, (audiobook_id,))
+                audiobook = cr.fetchone()
+                query = '''
+SELECT * FROM audiofiles WHERE audiobook_id = ? ORDER BY sequence ASC;'''
+                cr.execute(query, (audiobook_id,))
+                items = cr.fetchall()
+                return audiobook, items

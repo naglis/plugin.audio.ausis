@@ -37,3 +37,7 @@ msgstr ""
 msgctxt "#30006"
 msgid "Scan now"
 msgstr ""
+
+msgctxt "#30007"
+msgid "Scan audiobook directory"
+msgstr ""
