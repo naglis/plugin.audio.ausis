@@ -39,5 +39,25 @@ msgid "Scan now"
 msgstr ""
 
 msgctxt "#30007"
-msgid "Scan audiobook directory"
+msgid "Scanning your audiobook directory"
+msgstr ""
+
+msgctxt "#30008"
+msgid "ausis"
+msgstr ""
+
+msgctxt "#30009"
+msgid "The audiobook directory is configured, but there are no audiobooks in the database yet."
+msgstr ""
+
+msgctxt "#30010"
+msgid "Would you like to scan the audiobook directory now?"
+msgstr ""
+
+msgctxt "#30011"
+msgid "Yes"
+msgstr ""
+
+msgctxt "#30012"
+msgid "No"
 msgstr ""

@@ -85,9 +85,20 @@ class Ausis(object):
             self.addon.getSetting('audiobook_directory'))
         db = database.AudioBookDB.get_db(self.db_path)
         audiobooks = db.get_all_audiobooks()
-        if not audiobooks and not directory:
+        if not directory and not audiobooks:
             kodigui.Dialog().ok(self._t(30000), self._t(30001))
             return
+        elif directory and not audiobooks and ask_to_scan:
+            dialog = kodigui.Dialog()
+            scan_now = dialog.yesno(self._t(30008), line1=self._t(30009),
+                line2=self._t(30010), yeslabel=self._t(30011),
+                nolabel=self._t(30012)
+            )
+            if scan_now:
+                kodi.executebuiltin(
+                    'RunPlugin(%s)' % self._build_url(mode='scan')
+                )
+                return
         for audiobook in audiobooks:
             cover = audiobook[b'cover_path']
             if cover:
@@ -213,12 +224,12 @@ class Ausis(object):
                 continue
 
             self.log('Subdirectory: %s contains: %d audiofiles' %
-                     (abs_path, len(audiofiles)))
+                     (utils.decode_arg(abs_path), len(audiofiles)))
 
             cover_files = list(utils.ifind_cover(abs_path))
-            cover = cover_files[0] if cover_files else None
+            cover = utils.decode_arg(cover_files[0]) if cover_files else None
             fanart_files = list(utils.ifind_fanart(abs_path))
-            fanart = fanart_files[0] if fanart_files else None
+            fanart = utils.decode_arg(fanart_files[0]) if fanart_files else None
 
             items, authors, albums = [], set(), set()
             for f in sorted(audiofiles):
