@@ -11,9 +11,7 @@ import xbmcgui as kodigui
 import xbmcplugin as kodiplugin
 import xbmcvfs as kodivfs
 
-import database
-import tags
-import utils
+from resources.lib import database, tags, utils
 
 
 class Ausis(object):
@@ -205,10 +203,9 @@ class Ausis(object):
                 self.log('Audiobook: %s already exists, skipping.' % subdir)
                 continue
             abs_path = utils.encode_arg(os.path.join(directory, subdir))
-            audiofiles = map(utils.decode_arg, utils.iscan(abs_path))
+            audiofiles = map(utils.decode_arg, utils.ifind_audio(abs_path))
 
-            progress = int((1.0 * idx) / total_dirs * 100.0)
-            self.log('Setting progress to: %d' % progress)
+            progress = int(100.0 * idx / total_dirs)
             dialog.update(progress)
 
             if not audiofiles:
@@ -225,23 +222,23 @@ class Ausis(object):
 
             items, authors, albums = [], set(), set()
             for f in sorted(audiofiles):
-                self.log('Getting tags of file: %s' % f)
+                # self.log('Getting tags of file: %s' % f)
                 file_tags = tags.get_tags(f)
                 if file_tags.album:
                     albums.add(file_tags.album)
                 if file_tags.artist:
                     authors.add(file_tags.artist)
-                self.log(
-                    'Item: %s, duration: %s' % (
-                        file_tags.title, file_tags.duration)
-                )
+                # self.log(
+                    # 'Item: %s, duration: %s' % (
+                        # file_tags.title, file_tags.duration)
+                # )
                 items.append((file_tags.title, f, file_tags.duration))
             title = albums.pop() if albums else subdir
 
             if authors:
                 author = authors.pop()
             else:
-                self.log('Unknown artist: %s' % subdir)
+                # self.log('Unknown artist: %s' % subdir)
                 continue
 
             db.add_audiobook(

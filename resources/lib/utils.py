@@ -7,6 +7,12 @@ import re
 import urlparse
 
 
+IMAGE_EXTENSIONS = ('jpg', 'png')
+AUDIO_EXTENSIONS = ('mp3', 'ogg')
+COVER_FILENAMES = ('cover', 'folder', 'cover[\s_-]?art')
+FANART_FILENAMES = ('fan[\s_-]?art',)
+
+
 def decode_arg(arg):
     if isinstance(arg, str):
         arg = arg.decode('utf-8')
@@ -42,24 +48,37 @@ def parse_query(query, defaults=None):
     return d
 
 
-def iglob_ext(path, filenames=None, extensions=None):
+def make_regex_filename_matcher(filenames=None, extensions=None):
     if extensions is None:
         extensions = ('[a-z0-9]+',)
     if filenames is None:
         filenames = ('.+',)
     pattern = re.compile(r'(?i)^(%s)\.(%s)$' % (
         '|'.join(filenames), '|'.join(extensions)))
+
+    def matcher(fn):
+        return pattern.match(fn) is not None
+
+    return matcher
+
+
+def iscan_path(path, matcher):
+    path_join = os.path.join
     for subdir, _, files in os.walk(path):
         for fn in files:
-            if pattern.match(fn):
-                yield os.path.join(subdir, fn)
+            if matcher(fn):
+                yield path_join(subdir, fn)
 
 
-iscan = functools.partial(iglob_ext, extensions=('mp3', 'ogg', 'flac', 'wma'))
-ifind_cover = functools.partial(
-    iglob_ext, filenames=('cover', 'folder'), extensions=('jpg', 'png'))
-ifind_fanart = functools.partial(
-    iglob_ext, filenames=('fanart', 'fan_art'), extensions=('jpg', 'png'))
+audiofile_matcher = make_regex_filename_matcher(extensions=AUDIO_EXTENSIONS)
+cover_matcher = make_regex_filename_matcher(
+    filenames=COVER_FILENAMES, extensions=IMAGE_EXTENSIONS)
+fanart_matcher = make_regex_filename_matcher(
+    filenames=FANART_FILENAMES, extensions=IMAGE_EXTENSIONS)
+
+ifind_audio = functools.partial(iscan_path, matcher=audiofile_matcher)
+ifind_cover = functools.partial(iscan_path, matcher=cover_matcher)
+ifind_fanart = functools.partial(iscan_path, matcher=fanart_matcher)
 
 
 def format_duration(s):

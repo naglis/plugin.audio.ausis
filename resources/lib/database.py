@@ -86,7 +86,7 @@ INSERT INTO audiobooks (
                 audiobook_id = cr.lastrowid
 
                 audiofile_ids = []
-                for sequence, item in enumerate(files):
+                for sequence, item in enumerate(files, start=1):
                     title, file_path, duration = item
                     query = '''
 INSERT INTO audiofiles (

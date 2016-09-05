@@ -6,7 +6,7 @@ import re
 
 import xbmc as kodi
 
-import database
+from resources.lib import database
 
 ITEM_PATTERN = re.compile(r'(?x)^ausis:item:(?P<id>\d+)$')
 
