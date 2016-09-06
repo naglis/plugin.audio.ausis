@@ -11,7 +11,7 @@ import xbmcgui as kodigui
 import xbmcplugin as kodiplugin
 import xbmcvfs as kodivfs
 
-from resources.lib import database, tags, utils
+from resources.lib import common, database, tags, utils
 
 AUDIOFILE_SORT_METHODS = (
     kodiplugin.SORT_METHOD_FILE,
@@ -22,14 +22,22 @@ AUDIOFILE_SORT_METHODS = (
     kodiplugin.SORT_METHOD_TRACKNUM,
     kodiplugin.SORT_METHOD_UNSORTED,
 )
+AUDIOBOOK_SORT_METHODS = (
+    kodiplugin.SORT_METHOD_DATEADDED,
+    kodiplugin.SORT_METHOD_NONE,
+    kodiplugin.SORT_METHOD_TITLE,
+    kodiplugin.SORT_METHOD_TITLE_IGNORE_THE,
+    kodiplugin.SORT_METHOD_UNSORTED,
+)
 
 
 class Ausis(object):
 
-    def __init__(self, base_url, handle, addon):
+    def __init__(self, base_url, handle, addon, db):
         self._base_url = base_url
         self._handle = handle
         self._addon = addon
+        self._db = db
 
     def _build_url(self, **kwargs):
         '''Build and returns a plugin  URL.'''
@@ -40,11 +48,6 @@ class Ausis(object):
     def _t(self, string_id):
         '''A shorthand to addon.getLocalizedString.'''
         return self._addon.getLocalizedString(string_id)
-
-    @property
-    def db_path(self):
-        kodi_db_dir = kodi.translatePath('special://database')
-        return os.path.join(kodi_db_dir, 'ausis.db')
 
     def log(self, msg, level=kodi.LOGDEBUG):
         log_enabled = (
@@ -97,8 +100,7 @@ class Ausis(object):
     def mode_main(self, args):
         directory = utils.decode_arg(
             self._addon.getSetting('audiobook_directory'))
-        db = database.AudioBookDB.get_db(self.db_path)
-        audiobooks = db.get_all_audiobooks()
+        audiobooks = self._db.get_all_audiobooks()
         if not directory and not audiobooks:
             kodigui.Dialog().ok(self._t(30000), self._t(30001))
             return
@@ -114,6 +116,10 @@ class Ausis(object):
                     'RunPlugin(%s)' % self._build_url(mode='scan')
                 )
                 return
+
+        for sort_method in AUDIOBOOK_SORT_METHODS:
+            kodiplugin.addSortMethod(self._handle, sort_method)
+
         for audiobook in audiobooks:
             cover = audiobook[b'cover_path']
             if cover:
@@ -124,29 +130,41 @@ class Ausis(object):
             url = self._build_url(
                 mode='audiobook', audiobook_id=audiobook[b'id'])
             li = kodigui.ListItem(audiobook[b'title'], iconImage=cover)
+            li.setInfo('music', {
+                'duration': int(audiobook[b'duration']),
+                'artist': audiobook[b'author'],
+                'album': audiobook[b'title'],
+                'genre': 'Audiobook',
+            })
+            li.setInfo('video', {
+                'dateadded': audiobook[b'date_added'].strftime('%Y-%m-%d %H:%M:%S'),
+            })
             if fanart:
                 li.setProperty('Fanart_Image', fanart)
             kodiplugin.addDirectoryItem(
-                handle=self._handle, url=url, listitem=li, isFolder=True)
+                handle=self._handle,
+                url=url,
+                listitem=li,
+                isFolder=True,
+                totalItems=len(audiobooks),
+            )
         kodiplugin.endOfDirectory(self._handle)
 
     def mode_audiobook(self, args):
         audiobook_id = args.get('audiobook_id')
-        db = database.AudioBookDB.get_db(self.db_path)
         if audiobook_id:
-            audiobook, items = db.get_audiobook(audiobook_id)
+            audiobook, items = self._db.get_audiobook(audiobook_id)
             cover = audiobook[b'cover_path']
             if cover:
                 cover = os.path.join(audiobook[b'path'], cover)
             fanart = audiobook[b'fanart_path']
             if fanart:
                 fanart = os.path.join(audiobook[b'path'], fanart)
-            bookmark = db.get_audiobook_last_bookmark(audiobook_id)
+            bookmark = self._db.get_audiobook_last_bookmark(audiobook_id)
 
             for sort_method in AUDIOFILE_SORT_METHODS:
                 kodiplugin.addSortMethod(self._handle, sort_method)
             if bookmark:
-                self.log(str(bookmark))
                 url = self._build_url(
                     mode='resume', bookmark_id=bookmark[b'id'])
                 position = utils.format_duration(bookmark[b'position'])
@@ -173,9 +191,8 @@ class Ausis(object):
 
     def mode_play(self, args):
         audiofile_id = args.get('audiofile_id')
-        db = database.AudioBookDB.get_db(self.db_path)
         if audiofile_id:
-            audiobook, items = db.get_remaining_audiofiles(audiofile_id)
+            audiobook, items = self._db.get_remaining_audiofiles(audiofile_id)
             audiobook_path = audiobook[b'path']
             playlist = kodi.PlayList(kodi.PLAYLIST_MUSIC)
             playlist.clear()
@@ -189,13 +206,12 @@ class Ausis(object):
 
     def mode_resume(self, args):
         bookmark_id = args.get('bookmark_id')
-        db = database.AudioBookDB.get_db(self.db_path)
         if bookmark_id:
-            bookmark = db.get_bookmark(bookmark_id)
+            bookmark = self._db.get_bookmark(bookmark_id)
             if not bookmark:
                 return
             audiofile_id = bookmark[b'audiofile_id']
-            audiobook, items = db.get_remaining_audiofiles(audiofile_id)
+            audiobook, items = self._db.get_remaining_audiofiles(audiofile_id)
             audiobook_path = audiobook[b'path']
             playlist = kodi.PlayList(kodi.PLAYLIST_MUSIC)
             playlist.clear()
@@ -226,10 +242,8 @@ class Ausis(object):
         dirs, _ = map(utils.decode_list, kodivfs.listdir(directory))
         total_dirs = len(dirs)
 
-        db = database.AudioBookDB.get_db(self.db_path)
-
         for idx, subdir in enumerate(dirs, start=1):
-            if db.audiobook_exists(subdir):
+            if self._db.audiobook_exists(subdir):
                 self.log('Audiobook: %s already exists, skipping.' % subdir)
                 continue
             abs_path = utils.encode_arg(os.path.join(directory, subdir))
@@ -273,7 +287,7 @@ class Ausis(object):
                 # self.log('Unknown artist: %s' % subdir)
                 continue
 
-            db.add_audiobook(
+            self._db.add_audiobook(
                 author, title, subdir, items, cover_path=cover,
                 fanart_path=fanart,
             )
@@ -286,7 +300,9 @@ def main():
     addon = kodiaddon.Addon(id='plugin.audio.ausis')
     base_url, handle = sys.argv[0], int(sys.argv[1])
     args = utils.parse_query(sys.argv[2][1:])
-    Ausis(base_url, handle, addon).run(args)
+    db_filename = common.get_db_path(database.DB_FILE_NAME)
+    db = database.AudioBookDB.get_db(db_filename)
+    Ausis(base_url, handle, addon, db).run(args)
 
 if __name__ == '__main__':
     main()

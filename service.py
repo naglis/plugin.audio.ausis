@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import os
 import re
 
 import xbmc as kodi
 
-from resources.lib import database
+from resources.lib import common, database
 
 ITEM_PATTERN = re.compile(r'(?x)^ausis:item:(?P<id>\d+)$')
 
@@ -17,11 +16,6 @@ def parse_id(comment):
         return int(m.group('id'))
 
 
-def get_db_path():
-    kodi_db_dir = kodi.translatePath('special://database')
-    return os.path.join(kodi_db_dir, 'ausis.db')
-
-
 class AudioBookPlayer(kodi.Player):
 
     def __init__(self, *args, **kwargs):
@@ -29,7 +23,8 @@ class AudioBookPlayer(kodi.Player):
         self.was_playing_audio = False
         self._current = None
         self._last_known_position = 0.0
-        self._db = database.AudioBookDB.get_db(get_db_path())
+        self._db = database.AudioBookDB.get_db(
+            common.get_db_path(database.DB_FILE_NAME))
         kodi.log('Started ausis AudioBookPlayer')
 
     def _bookmark(self):
@@ -87,11 +82,12 @@ class AudioBookPlayer(kodi.Player):
 
 def main():
     monitor = kodi.Monitor()
-    AudioBookPlayer()
+    player = AudioBookPlayer()  # noqa
     while not monitor.abortRequested():
         if monitor.waitForAbort(10):
             break
-
+    del player
+    del monitor
 
 if __name__ == '__main__':
     main()

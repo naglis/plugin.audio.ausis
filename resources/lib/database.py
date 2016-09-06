@@ -5,6 +5,9 @@ import contextlib
 import sqlite3
 
 
+DB_FILE_NAME = 'ausis.sqlite'
+
+
 class AudioBookDB(object):
 
     def __init__(self, db_path):
@@ -17,7 +20,8 @@ class AudioBookDB(object):
         return db
 
     def get_conn(self):
-        conn = sqlite3.connect(self._db_path)
+        conn = sqlite3.connect(
+            self._db_path, detect_types=sqlite3.PARSE_DECLTYPES)
         conn.row_factory = sqlite3.Row
         conn.execute('PRAGMA foreign_keys;')
         return conn
@@ -36,7 +40,7 @@ CREATE TABLE IF NOT EXISTS audiobooks (
     cover_path VARCHAR,
     fanart_path VARCHAR,
     summary TEXT,
-    date_added DATETIME,
+    date_added TIMESTAMP,
     PRIMARY KEY (id),
     UNIQUE (id)
 );
@@ -129,7 +133,22 @@ LIMIT
     def get_all_audiobooks(self):
         with contextlib.closing(self.get_conn()) as conn:
             with conn:
-                query = 'SELECT * FROM audiobooks;'
+                query = '''
+SELECT
+    *,
+    a.date_added as "date_added [timestamp]",
+    SUM(f.duration) AS duration
+FROM
+    audiobooks AS a
+JOIN
+    audiofiles AS f
+ON
+    a.id = f.audiobook_id
+GROUP BY
+    f.audiobook_id
+ORDER BY
+    a.date_added;
+'''
                 cr = conn.cursor()
                 cr.execute(query)
                 return cr.fetchall()
