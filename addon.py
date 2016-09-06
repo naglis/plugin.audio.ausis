@@ -4,7 +4,6 @@ from __future__ import unicode_literals
 import contextlib
 import os
 import sys
-import urllib
 
 import xbmc as kodi
 import xbmcaddon as kodiaddon
@@ -32,43 +31,11 @@ AUDIOBOOK_SORT_METHODS = (
 )
 
 
-class Ausis(object):
+class Ausis(common.KodiPlugin):
 
     def __init__(self, base_url, handle, addon, cr):
-        self._base_url = base_url
-        self._handle = handle
-        self._addon = addon
+        super(Ausis, self).__init__(base_url, handle, addon)
         self._cr = cr
-
-    def _build_url(self, **kwargs):
-        '''Build and returns a plugin  URL.'''
-        return '%s?%s' % (
-            self._base_url, urllib.urlencode(utils.encode_values(kwargs))
-        )
-
-    def _t(self, string_id):
-        '''A shorthand to addon.getLocalizedString.'''
-        return self._addon.getLocalizedString(string_id)
-
-    def log(self, msg, level=kodi.LOGDEBUG):
-        log_enabled = (
-            self._addon.getSetting('logging_enabled').lower() == 'true' or not
-            level == kodi.LOGDEBUG)
-        if log_enabled:
-            msg = ('%s: %s' % (
-                self._addon.getAddonInfo('id'), msg)).encode('utf-8')
-            kodi.log(msg=msg, level=level)
-
-    def run(self, args):
-        mode = args.get('mode') or 'main'
-        mode_handler = 'mode_%s' % mode
-        if hasattr(self, mode_handler):
-            return getattr(self, mode_handler)(args)
-        else:
-            self.log(
-                'Plugin called with unknown mode: %s' % mode,
-                level=kodi.LOGERROR,
-            )
 
     def _prepare_audiofile_listitem(self, audiobook, item):
         cover = audiobook[b'cover_path']
