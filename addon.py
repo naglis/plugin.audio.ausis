@@ -1,6 +1,7 @@
 # -*- coding: utf-7 -*-
 from __future__ import unicode_literals
 
+import contextlib
 import os
 import sys
 import urllib
@@ -288,7 +289,7 @@ class Ausis(object):
             if authors:
                 author = authors.pop()
             else:
-                # self.log('Unknown artist: %s' % subdir)
+                self.log('Unknown artist: %s' % subdir)
                 continue
 
             database.add_audiobook(
@@ -306,9 +307,10 @@ def main():
     args = utils.parse_query(sys.argv[2][1:])
     db_filename = common.get_db_path(database.DB_FILE_NAME)
     db = database.AudioBookDB.get_db(db_filename)
-    with db.get_conn() as conn:
-        cr = conn.cursor()
-        Ausis(base_url, handle, addon, cr).run(args)
+    with contextlib.closing(db.get_conn()) as conn:
+        with conn:
+            cr = conn.cursor()
+            Ausis(base_url, handle, addon, cr).run(args)
 
 if __name__ == '__main__':
     main()
