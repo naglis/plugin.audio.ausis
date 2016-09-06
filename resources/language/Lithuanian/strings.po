@@ -1,0 +1,63 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: TV Addons Addons\n"
+"POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: English\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgctxt "#30000"
+msgid "Configuration required"
+msgstr "Reikalinga konfigūracija"
+
+msgctxt "#30001"
+msgid "The audiobook directory is not set!"
+msgstr "Nenurodytas audioknygų aplankas!"
+
+msgctxt "#30002"
+msgid "General"
+msgstr "Bendri"
+
+msgctxt "#30003"
+msgid "Advanced"
+msgstr "Išplėstiniai"
+
+msgctxt "#30004"
+msgid "Audiobook directory"
+msgstr "Audioknygų aplankas"
+
+msgctxt "#30005"
+msgid "Enable debug logging"
+msgstr "Įjungti derinimo pranešimus"
+
+msgctxt "#30006"
+msgid "Scan now"
+msgstr "Skenuoti dabar"
+
+msgctxt "#30007"
+msgid "Scanning your audiobook directory"
+msgstr "Skenuojamas audioknygų aplankas"
+
+msgctxt "#30008"
+msgid "ausis"
+msgstr "ausis"
+
+msgctxt "#30009"
+msgid "The audiobook directory is configured, but there are no audiobooks in the database yet."
+msgstr "Audioknygų aplankas nurodytas, bet duomenų bazėje dar nėra įrašų apie audioknygas."
+
+msgctxt "#30010"
+msgid "Would you like to scan the audiobook directory now?"
+msgstr "Ar norėtumėte skenuoti audioknygų aplanką dabar?"
+
+msgctxt "#30011"
+msgid "Yes"
+msgstr "Taip"
+
+msgctxt "#30012"
+msgid "No"
+msgstr "Ne"
