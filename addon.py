@@ -17,18 +17,18 @@ from resources.lib import database, tags, utils
 class Ausis(object):
 
     def __init__(self, base_url, handle, addon):
-        self.base_url = base_url
-        self.handle = handle
-        self.addon = addon
+        self._base_url = base_url
+        self._handle = handle
+        self._addon = addon
 
     def _build_url(self, **kwargs):
         '''Build and returns a plugin  URL.'''
         return '%s?%s' % (
-            self.base_url, urllib.urlencode(utils.encode_values(kwargs))
+            self._base_url, urllib.urlencode(utils.encode_values(kwargs))
         )
 
     def _t(self, string_id):
-        return self.addon.getLocalizedString(string_id)
+        return self._addon.getLocalizedString(string_id)
 
     @property
     def db_path(self):
@@ -37,11 +37,11 @@ class Ausis(object):
 
     def log(self, msg, level=kodi.LOGDEBUG):
         log_enabled = (
-            self.addon.getSetting('logging_enabled').lower() == 'true' or not
+            self._addon.getSetting('logging_enabled').lower() == 'true' or not
             level == kodi.LOGDEBUG)
         if log_enabled:
             msg = ('%s: %s' % (
-                self.addon.getAddonInfo('id'), msg)).encode('utf-8')
+                self._addon.getAddonInfo('id'), msg)).encode('utf-8')
             kodi.log(msg=msg, level=level)
 
     def run(self, args):
@@ -72,6 +72,9 @@ class Ausis(object):
             'title': item[b'title'],
             'genre': 'Audiobook',
             'comment': 'ausis:item:%d' % item[b'id'],
+            'playcount': 0,
+            'size': item[b'size'],
+            'count': item[b'sequence'],
         })
         li.setArt({
             'thumb': cover,
@@ -82,13 +85,13 @@ class Ausis(object):
 
     def mode_main(self, args):
         directory = utils.decode_arg(
-            self.addon.getSetting('audiobook_directory'))
+            self._addon.getSetting('audiobook_directory'))
         db = database.AudioBookDB.get_db(self.db_path)
         audiobooks = db.get_all_audiobooks()
         if not directory and not audiobooks:
             kodigui.Dialog().ok(self._t(30000), self._t(30001))
             return
-        elif directory and not audiobooks and ask_to_scan:
+        elif directory and not audiobooks:
             dialog = kodigui.Dialog()
             scan_now = dialog.yesno(self._t(30008), line1=self._t(30009),
                 line2=self._t(30010), yeslabel=self._t(30011),
@@ -112,8 +115,8 @@ class Ausis(object):
             if fanart:
                 li.setProperty('Fanart_Image', fanart)
             kodiplugin.addDirectoryItem(
-                handle=self.handle, url=url, listitem=li, isFolder=True)
-        kodiplugin.endOfDirectory(self.handle)
+                handle=self._handle, url=url, listitem=li, isFolder=True)
+        kodiplugin.endOfDirectory(self._handle)
 
     def mode_audiobook(self, args):
         audiobook_id = args.get('audiobook_id')
@@ -127,6 +130,14 @@ class Ausis(object):
             if fanart:
                 fanart = os.path.join(audiobook[b'path'], fanart)
             bookmark = db.get_audiobook_last_bookmark(audiobook_id)
+
+            kodiplugin.addSortMethod(self._handle, kodiplugin.SORT_METHOD_NONE)
+            kodiplugin.addSortMethod(self._handle, kodiplugin.SORT_METHOD_UNSORTED)
+            kodiplugin.addSortMethod(self._handle, kodiplugin.SORT_METHOD_TRACKNUM)
+            kodiplugin.addSortMethod(self._handle, kodiplugin.SORT_METHOD_FILE)
+            kodiplugin.addSortMethod(self._handle, kodiplugin.SORT_METHOD_TITLE)
+            kodiplugin.addSortMethod(self._handle, kodiplugin.SORT_METHOD_TITLE_IGNORE_THE)
+            kodiplugin.addSortMethod(self._handle, kodiplugin.SORT_METHOD_FULLPATH)
             if bookmark:
                 self.log(str(bookmark))
                 url = self._build_url(
@@ -134,7 +145,7 @@ class Ausis(object):
                 position = utils.format_duration(bookmark[b'position'])
                 li = kodigui.ListItem('Resume (%s)' % position)
                 kodiplugin.addDirectoryItem(
-                    handle=self.handle,
+                    handle=self._handle,
                     url=url,
                     listitem=li,
                     isFolder=False,
@@ -143,12 +154,13 @@ class Ausis(object):
                 url = self._build_url(mode='play', audiofile_id=item[b'id'])
                 li = self._prepare_audiofile_listitem(audiobook, item)
                 kodiplugin.addDirectoryItem(
-                    handle=self.handle,
+                    handle=self._handle,
                     url=url,
                     listitem=li,
                     isFolder=False,
+                    totalItems=len(items),
                 )
-            kodiplugin.endOfDirectory(self.handle)
+            kodiplugin.endOfDirectory(self._handle)
         else:
             self.log('No audiobook ID provided!', level=kodi.LOGERROR)
 
@@ -196,7 +208,7 @@ class Ausis(object):
 
     def mode_scan(self, args):
         directory = utils.decode_arg(
-            self.addon.getSetting('audiobook_directory'))
+            self._addon.getSetting('audiobook_directory'))
         if not directory:
             kodigui.Dialog().ok(self._t(30000), self._t(30001))
             return
@@ -214,7 +226,7 @@ class Ausis(object):
                 self.log('Audiobook: %s already exists, skipping.' % subdir)
                 continue
             abs_path = utils.encode_arg(os.path.join(directory, subdir))
-            audiofiles = map(utils.decode_arg, utils.ifind_audio(abs_path))
+            audiofiles = list(utils.ifind_audio(abs_path))
 
             progress = int(100.0 * idx / total_dirs)
             dialog.update(progress)
@@ -232,18 +244,19 @@ class Ausis(object):
             fanart = utils.decode_arg(fanart_files[0]) if fanart_files else None
 
             items, authors, albums = [], set(), set()
-            for f in sorted(audiofiles):
-                # self.log('Getting tags of file: %s' % f)
-                file_tags = tags.get_tags(f)
+            for fn in sorted(audiofiles):
+                file_tags = tags.get_tags(fn)
                 if file_tags.album:
                     albums.add(file_tags.album)
                 if file_tags.artist:
                     authors.add(file_tags.artist)
-                # self.log(
-                    # 'Item: %s, duration: %s' % (
-                        # file_tags.title, file_tags.duration)
-                # )
-                items.append((file_tags.title, f, file_tags.duration))
+                size = os.path.getsize(fn)
+                items.append((
+                    file_tags.title,
+                    utils.decode_arg(fn),
+                    file_tags.duration,
+                    size,
+                ))
             title = albums.pop() if albums else subdir
 
             if authors:

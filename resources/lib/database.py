@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS audiofiles (
     file_path VARCHAR NOT NULL, -- Relative to audiobook.path
     duration INTEGER,
     sequence INTEGER NOT NULL,
+    size INTEGER DEFAULT 0,
     PRIMARY KEY (id),
     UNIQUE (id),
     FOREIGN KEY(audiobook_id) REFERENCES audiobooks (id) ON DELETE CASCADE
@@ -87,18 +88,22 @@ INSERT INTO audiobooks (
 
                 audiofile_ids = []
                 for sequence, item in enumerate(files, start=1):
-                    title, file_path, duration = item
+                    title, file_path, duration, size = item
                     query = '''
 INSERT INTO audiofiles (
     audiobook_id,
     title,
     file_path,
     duration,
-    sequence
+    sequence,
+    size
 ) VALUES (
-    ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?
 );'''
-                    data = audiobook_id, title, file_path, duration, sequence
+                    data = (
+                        audiobook_id, title, file_path, duration, sequence,
+                        size,
+                    )
                     cr.execute(query, data)
                     audiofile_ids.append(cr.lastrowid)
 
@@ -146,7 +151,7 @@ SELECT * FROM audiofiles WHERE audiobook_id = ? ORDER BY sequence ASC;'''
         with contextlib.closing(self.get_conn()) as conn:
             with conn:
                 query = '''
-SELECT audiobook_id, sequence  FROM audiofiles WHERE id = ?;'''
+SELECT audiobook_id, sequence FROM audiofiles WHERE id = ?;'''
                 cr = conn.cursor()
                 cr.execute(query, (audiofile_id,))
                 result = cr.fetchone()
