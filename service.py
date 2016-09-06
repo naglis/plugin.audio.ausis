@@ -87,7 +87,7 @@ class AudioBookPlayer(kodi.Player):
 
 def main():
     monitor = kodi.Monitor()
-    player = AudioBookPlayer()
+    AudioBookPlayer()
     while not monitor.abortRequested():
         if monitor.waitForAbort(10):
             break

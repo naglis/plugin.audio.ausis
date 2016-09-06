@@ -14,7 +14,7 @@ def single_item(tags):
     if isinstance(tags, list):
         return tags[0]
     else:
-       return tags
+        return tags
 
 
 def id3_getter(tag, tags):

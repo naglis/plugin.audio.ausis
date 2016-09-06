@@ -13,6 +13,16 @@ import xbmcvfs as kodivfs
 
 from resources.lib import database, tags, utils
 
+AUDIOFILE_SORT_METHODS = (
+    kodiplugin.SORT_METHOD_FILE,
+    kodiplugin.SORT_METHOD_FULLPATH,
+    kodiplugin.SORT_METHOD_NONE,
+    kodiplugin.SORT_METHOD_TITLE,
+    kodiplugin.SORT_METHOD_TITLE_IGNORE_THE,
+    kodiplugin.SORT_METHOD_TRACKNUM,
+    kodiplugin.SORT_METHOD_UNSORTED,
+)
+
 
 class Ausis(object):
 
@@ -28,6 +38,7 @@ class Ausis(object):
         )
 
     def _t(self, string_id):
+        '''A shorthand to addon.getLocalizedString.'''
         return self._addon.getLocalizedString(string_id)
 
     @property
@@ -93,7 +104,8 @@ class Ausis(object):
             return
         elif directory and not audiobooks:
             dialog = kodigui.Dialog()
-            scan_now = dialog.yesno(self._t(30008), line1=self._t(30009),
+            scan_now = dialog.yesno(
+                self._t(30008), line1=self._t(30009),
                 line2=self._t(30010), yeslabel=self._t(30011),
                 nolabel=self._t(30012)
             )
@@ -131,13 +143,8 @@ class Ausis(object):
                 fanart = os.path.join(audiobook[b'path'], fanart)
             bookmark = db.get_audiobook_last_bookmark(audiobook_id)
 
-            kodiplugin.addSortMethod(self._handle, kodiplugin.SORT_METHOD_NONE)
-            kodiplugin.addSortMethod(self._handle, kodiplugin.SORT_METHOD_UNSORTED)
-            kodiplugin.addSortMethod(self._handle, kodiplugin.SORT_METHOD_TRACKNUM)
-            kodiplugin.addSortMethod(self._handle, kodiplugin.SORT_METHOD_FILE)
-            kodiplugin.addSortMethod(self._handle, kodiplugin.SORT_METHOD_TITLE)
-            kodiplugin.addSortMethod(self._handle, kodiplugin.SORT_METHOD_TITLE_IGNORE_THE)
-            kodiplugin.addSortMethod(self._handle, kodiplugin.SORT_METHOD_FULLPATH)
+            for sort_method in AUDIOFILE_SORT_METHODS:
+                kodiplugin.addSortMethod(self._handle, sort_method)
             if bookmark:
                 self.log(str(bookmark))
                 url = self._build_url(
@@ -241,7 +248,8 @@ class Ausis(object):
             cover_files = list(utils.ifind_cover(abs_path))
             cover = utils.decode_arg(cover_files[0]) if cover_files else None
             fanart_files = list(utils.ifind_fanart(abs_path))
-            fanart = utils.decode_arg(fanart_files[0]) if fanart_files else None
+            fanart = (
+                utils.decode_arg(fanart_files[0]) if fanart_files else None)
 
             items, authors, albums = [], set(), set()
             for fn in sorted(audiofiles):
