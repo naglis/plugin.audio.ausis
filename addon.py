@@ -98,12 +98,18 @@ class Ausis(common.KodiPlugin):
             url = self._build_url(
                 mode='audiobook', audiobook_id=audiobook[b'id'])
             li = kodigui.ListItem(audiobook[b'title'], iconImage=cover)
-            li.setInfo('music', {
+            info_labels = {
                 'duration': int(audiobook[b'duration']),
                 'artist': audiobook[b'author'],
                 'album': audiobook[b'title'],
                 'genre': 'Audiobook',
-            })
+            }
+            if audiobook[b'last_played']:
+                info_labels.update({
+                    'lastplayed': audiobook[b'last_played'].strftime('%Y-%m-%d %H:%M:%S'),
+                })
+            li.setInfo('music', info_labels)
+
             li.setInfo('video', {
                 'dateadded': audiobook[b'date_added'].strftime(
                     '%Y-%m-%d %H:%M:%S'),

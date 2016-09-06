@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS audiobooks (
     cover_path VARCHAR,
     fanart_path VARCHAR,
     summary TEXT,
-    date_added TIMESTAMP,
+    date_added TIMESTAMP DEFAULT 0,
     PRIMARY KEY (id),
     UNIQUE (id)
 );
@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS bookmarks (
     audiofile_id INTEGER,
     audiobook_id INTEGER,
     position INTEGER,
+    date_added TIMESTAMP DEFAULT 0,
     PRIMARY KEY (id),
     UNIQUE (id),
     FOREIGN KEY(audiofile_id) REFERENCES audiofiles (id) ON DELETE CASCADE,
@@ -132,6 +133,7 @@ def get_all_audiobooks(cr):
 SELECT
     *,
     a.date_added as "date_added [timestamp]",
+    b.date_added as "last_played [timestamp]",
     SUM(f.duration) AS duration
 FROM
     audiobooks AS a
@@ -139,6 +141,10 @@ JOIN
     audiofiles AS f
 ON
     a.id = f.audiobook_id
+LEFT JOIN
+    bookmarks AS b
+ON
+    a.id = b.audiobook_id
 GROUP BY
     f.audiobook_id
 ORDER BY
@@ -198,7 +204,8 @@ SELECT id, audiobook_id, position FROM bookmarks WHERE audiofile_id = ?;'''
         # Update existing bookmark.
         bookmark_id, audiobook_id, old_position = result
         query = '''
-UPDATE bookmarks SET position = ? WHERE id = ?;'''
+UPDATE bookmarks SET position = ?, date_added = DATETIME('now') WHERE id = ?;
+'''
         cr.execute(query, (position, bookmark_id))
     else:
         # Add new bookmark.
@@ -213,8 +220,9 @@ SELECT audiobook_id FROM audiofiles WHERE id = ?;'''
 INSERT INTO bookmarks (
     audiofile_id,
     audiobook_id,
-    position
-) VALUES (?, ?, ?);'''
+    position,
+    date_added
+) VALUES (?, ?, ?, DATETIME('now'));'''
         cr.execute(query, (audiofile_id, audiobook_id, position))
         bookmark_id = cr.lastrowid
     return bookmark_id
