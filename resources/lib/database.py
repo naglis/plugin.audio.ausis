@@ -67,12 +67,10 @@ CREATE TABLE IF NOT EXISTS bookmarks (
     FOREIGN KEY(audiobook_id) REFERENCES audiobooks (id) ON DELETE CASCADE
 );''')
 
-    def add_audiobook(self, author, title, path, files, narrator=None,
-                      cover_path=None, fanart_path=None, summary=None):
-        with contextlib.closing(self.get_conn()) as conn:
-            with conn:
-                cr = conn.cursor()
-                query = '''
+
+def add_audiobook(cr, author, title, path, files, narrator=None,
+                  cover_path=None, fanart_path=None, summary=None):
+    query = '''
 INSERT INTO audiobooks (
     author,
     title,
@@ -85,15 +83,15 @@ INSERT INTO audiobooks (
 ) VALUES (
     ?, ?, ?, ?, ?, ?, ?, DATETIME('now')
 );'''
-                data = (author, title, narrator, path, cover_path, fanart_path,
-                        summary)
-                cr.execute(query, data)
-                audiobook_id = cr.lastrowid
+    data = (author, title, narrator, path, cover_path, fanart_path,
+            summary)
+    cr.execute(query, data)
+    audiobook_id = cr.lastrowid
 
-                audiofile_ids = []
-                for sequence, item in enumerate(files, start=1):
-                    title, file_path, duration, size = item
-                    query = '''
+    audiofile_ids = []
+    for sequence, item in enumerate(files, start=1):
+        title, file_path, duration, size = item
+        query = '''
 INSERT INTO audiofiles (
     audiobook_id,
     title,
@@ -104,20 +102,18 @@ INSERT INTO audiofiles (
 ) VALUES (
     ?, ?, ?, ?, ?, ?
 );'''
-                    data = (
-                        audiobook_id, title, file_path, duration, sequence,
-                        size,
-                    )
-                    cr.execute(query, data)
-                    audiofile_ids.append(cr.lastrowid)
+        data = (
+            audiobook_id, title, file_path, duration, sequence,
+            size,
+        )
+        cr.execute(query, data)
+        audiofile_ids.append(cr.lastrowid)
 
-                return {audiobook_id: audiofile_ids}
+    return {audiobook_id: audiofile_ids}
 
-    def audiobook_exists(self, subdir):
-        with contextlib.closing(self.get_conn()) as conn:
-            with conn:
-                cr = conn.cursor()
-                query = '''
+
+def audiobook_exists(cr, subdir):
+    query = '''
 SELECT
     *
 FROM
@@ -126,14 +122,13 @@ WHERE
     path = ?
 LIMIT
     1;'''
-                cr.execute(query, (subdir,))
-                res = cr.fetchone()
-                return bool(res)
+    cr.execute(query, (subdir,))
+    res = cr.fetchone()
+    return bool(res)
 
-    def get_all_audiobooks(self):
-        with contextlib.closing(self.get_conn()) as conn:
-            with conn:
-                query = '''
+
+def get_all_audiobooks(cr):
+    query = '''
 SELECT
     *,
     a.date_added as "date_added [timestamp]",
@@ -149,39 +144,34 @@ GROUP BY
 ORDER BY
     a.date_added;
 '''
-                cr = conn.cursor()
-                cr.execute(query)
-                return cr.fetchall()
+    cr.execute(query)
+    return cr.fetchall()
 
-    def get_audiobook(self, audiobook_id):
-        with contextlib.closing(self.get_conn()) as conn:
-            with conn:
-                query = 'SELECT * FROM audiobooks WHERE id = ?;'
-                cr = conn.cursor()
-                cr.execute(query, (audiobook_id,))
-                audiobook = cr.fetchone()
-                query = '''
+
+def get_audiobook(cr, audiobook_id):
+    query = 'SELECT * FROM audiobooks WHERE id = ?;'
+    cr.execute(query, (audiobook_id,))
+    audiobook = cr.fetchone()
+    query = '''
 SELECT * FROM audiofiles WHERE audiobook_id = ? ORDER BY sequence ASC;'''
-                cr.execute(query, (audiobook_id,))
-                items = cr.fetchall()
-                return audiobook, items
+    cr.execute(query, (audiobook_id,))
+    items = cr.fetchall()
+    return audiobook, items
 
-    def get_remaining_audiofiles(self, audiofile_id):
-        with contextlib.closing(self.get_conn()) as conn:
-            with conn:
-                query = '''
+
+def get_remaining_audiofiles(cr, audiofile_id):
+    query = '''
 SELECT audiobook_id, sequence FROM audiofiles WHERE id = ?;'''
-                cr = conn.cursor()
-                cr.execute(query, (audiofile_id,))
-                result = cr.fetchone()
-                if not result:
-                    return None, []
-                audiobook_id, sequence = result
-                query = 'SELECT * FROM audiobooks WHERE id = ?;'
-                cr.execute(query, (audiobook_id,))
-                audiobook = cr.fetchone()
+    cr.execute(query, (audiofile_id,))
+    result = cr.fetchone()
+    if not result:
+        return None, []
+    audiobook_id, sequence = result
+    query = 'SELECT * FROM audiobooks WHERE id = ?;'
+    cr.execute(query, (audiobook_id,))
+    audiobook = cr.fetchone()
 
-                query = '''
+    query = '''
 SELECT
     *
 FROM
@@ -193,58 +183,52 @@ AND
 ORDER BY
     sequence
 ASC;'''
-                cr.execute(query, (audiobook_id, sequence))
-                items = cr.fetchall()
-                return audiobook, items
+    cr.execute(query, (audiobook_id, sequence))
+    items = cr.fetchall()
+    return audiobook, items
 
-    def add_bookmark(self, audiofile_id, position):
-        with contextlib.closing(self.get_conn()) as conn:
-            with conn:
-                cr = conn.cursor()
-                query = '''
+
+def add_bookmark(cr, audiofile_id, position):
+    query = '''
 SELECT id, audiobook_id, position FROM bookmarks WHERE audiofile_id = ?;'''
-                cr.execute(query, (audiofile_id,))
-                result = cr.fetchone()
+    cr.execute(query, (audiofile_id,))
+    result = cr.fetchone()
 
-                if result:
-                    # Update existing bookmark.
-                    bookmark_id, audiobook_id, old_position = result
-                    query = '''
+    if result:
+        # Update existing bookmark.
+        bookmark_id, audiobook_id, old_position = result
+        query = '''
 UPDATE bookmarks SET position = ? WHERE id = ?;'''
-                    cr.execute(query, (position, bookmark_id))
-                else:
-                    # Add new bookmark.
-                    query = '''
+        cr.execute(query, (position, bookmark_id))
+    else:
+        # Add new bookmark.
+        query = '''
 SELECT audiobook_id FROM audiofiles WHERE id = ?;'''
-                    cr.execute(query, (audiofile_id,))
-                    result = cr.fetchone()
-                    if not result:
-                        return False
-                    audiobook_id, = result
-                    query = '''
+        cr.execute(query, (audiofile_id,))
+        result = cr.fetchone()
+        if not result:
+            return False
+        audiobook_id, = result
+        query = '''
 INSERT INTO bookmarks (
     audiofile_id,
     audiobook_id,
     position
 ) VALUES (?, ?, ?);'''
-                    cr.execute(query, (audiofile_id, audiobook_id, position))
-                    bookmark_id = cr.lastrowid
-                return bookmark_id
+        cr.execute(query, (audiofile_id, audiobook_id, position))
+        bookmark_id = cr.lastrowid
+    return bookmark_id
 
-    def get_bookmark(self, bookmark_id):
-        with contextlib.closing(self.get_conn()) as conn:
-            with conn:
-                cr = conn.cursor()
-                query = 'SELECT * FROM bookmarks WHERE id = ?;'
-                cr.execute(query, (bookmark_id,))
-                result = cr.fetchone()
-                return result if result else None
 
-    def get_audiobook_last_bookmark(self, audiobook_id):
-        with contextlib.closing(self.get_conn()) as conn:
-            with conn:
-                cr = conn.cursor()
-                query = '''
+def get_bookmark(cr, bookmark_id):
+    query = 'SELECT * FROM bookmarks WHERE id = ?;'
+    cr.execute(query, (bookmark_id,))
+    result = cr.fetchone()
+    return result if result else None
+
+
+def get_audiobook_last_bookmark(cr, audiobook_id):
+    query = '''
 SELECT
     *
 FROM
@@ -260,6 +244,6 @@ ORDER BY
     b.position DESC
 LIMIT
     1;'''
-                cr.execute(query, (audiobook_id,))
-                result = cr.fetchone()
-                return result if result else None
+    cr.execute(query, (audiobook_id,))
+    result = cr.fetchone()
+    return result if result else None

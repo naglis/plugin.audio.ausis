@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import contextlib
 import re
 
 import xbmc as kodi
@@ -23,12 +24,13 @@ class AudioBookPlayer(kodi.Player):
         self.was_playing_audio = False
         self._current = None
         self._last_known_position = 0.0
-        self._db = database.AudioBookDB.get_db(
-            common.get_db_path(database.DB_FILE_NAME))
         kodi.log('Started ausis AudioBookPlayer')
 
+    def set_connection(self, conn):
+        self._db = conn
+
     def _bookmark(self):
-        if not self.was_playing_audio:
+        if not self.was_playing_audio or not self._db:
             return
         try:
             current = self.getMusicInfoTag()
@@ -37,15 +39,19 @@ class AudioBookPlayer(kodi.Player):
             current = self._current
             position = self._last_known_position
         finally:
-            if current:
-                audiofile_id = parse_id(current.getComment())
-                if audiofile_id is not None:
-                    bookmark_id = self._db.add_bookmark(audiofile_id, position)
-                    if bookmark_id:
-                        kodi.log('Added bookmark: %d at: %s' % (
-                            bookmark_id, position))
-                    else:
-                        kodi.log('Failed to add bookmark')
+            if not current:
+                return
+            audiofile_id = parse_id(current.getComment())
+            if not audiofile_id:
+                return
+            with self._db:
+                cr = self._db.cursor()
+                bookmark_id = database.add_bookmark(cr, audiofile_id, position)
+                if bookmark_id:
+                    kodi.log('Added bookmark: %d at: %s' % (
+                        bookmark_id, position))
+                else:
+                    kodi.log('Failed to add bookmark')
 
     def onPlayBackStarted(self):
         is_audio = self.isPlayingAudio()
@@ -82,10 +88,13 @@ class AudioBookPlayer(kodi.Player):
 
 def main():
     monitor = kodi.Monitor()
+    db = database.AudioBookDB.get_db(common.get_db_path(database.DB_FILE_NAME))
     player = AudioBookPlayer()  # noqa
-    while not monitor.abortRequested():
-        if monitor.waitForAbort(10):
-            break
+    with contextlib.closing(db.get_conn()) as conn:
+        player.set_connection(conn)
+        while not monitor.abortRequested():
+            if monitor.waitForAbort(10):
+                break
     del player
     del monitor
 
