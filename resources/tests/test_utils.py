@@ -33,7 +33,8 @@ class TestUtils(unittest.TestCase):
         ]
         for fn, expected in test_cases:
             actual = utils.audiofile_matcher(fn)
-            self.assertEqual(actual, expected)
+            self.assertEqual(
+                actual, expected, 'Matching audiofile: %s incorrectly' % fn)
 
     def test_coverfile_matcher(self):
         test_cases = [
@@ -51,4 +52,19 @@ class TestUtils(unittest.TestCase):
         ]
         for fn, expected in test_cases:
             actual = utils.cover_matcher(fn)
-            self.assertEqual(actual, expected, 'Matching: %s incorrectly' % fn)
+            self.assertEqual(
+                actual, expected, 'Matching cover: %s incorrectly' % fn)
+
+    def test_fanart_matcher(self):
+        test_cases = [
+            ('fanart.jpg', True),
+            ('FANART.png', True),
+            ('fan_art.jpg', True),
+            ('fan art.png', True),
+            ('fan-art.jpeg', True),
+            ('fanart.gif', False),
+        ]
+        for fn, expected in test_cases:
+            actual = utils.fanart_matcher(fn)
+            self.assertEqual(
+                actual, expected, 'Matching fanart: %s incorrectly' % fn)
