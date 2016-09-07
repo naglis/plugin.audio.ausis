@@ -3,3 +3,6 @@ include = resources/*
 
 [report]
 omit = resources/tests/*
+
+exclude_lines =
+    if __name__ == .__main__.:
