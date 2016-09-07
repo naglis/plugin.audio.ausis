@@ -7,7 +7,7 @@ import re
 import urlparse
 
 
-IMAGE_EXTENSIONS = ('jpg', 'png')
+IMAGE_EXTENSIONS = ('jpg', 'jpeg', 'png')
 AUDIO_EXTENSIONS = ('mp3', 'ogg')
 COVER_FILENAMES = ('cover', 'folder', 'cover[\s_-]?art')
 FANART_FILENAMES = ('fan[\s_-]?art',)
