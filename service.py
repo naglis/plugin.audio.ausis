@@ -88,7 +88,7 @@ class AudioBookPlayer(kodi.Player):
 
 def main():
     monitor = kodi.Monitor()
-    db = database.AudioBookDB.get_db(common.get_db_path(database.DB_FILE_NAME))
+    db = database.AudioBookDB(common.get_db_path(database.DB_FILE_NAME))
     player = AudioBookPlayer()  # noqa
     with contextlib.closing(db.get_conn()) as conn:
         player.set_connection(conn)

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import contextlib
 import sqlite3
 
 
@@ -13,24 +12,19 @@ class AudioBookDB(object):
     def __init__(self, db_path):
         self._db_path = db_path
 
-    @classmethod
-    def get_db(cls, db_path):
-        db = cls(db_path)
-        db.init_db()
-        return db
-
     def get_conn(self):
         conn = sqlite3.connect(
             self._db_path, detect_types=sqlite3.PARSE_DECLTYPES)
         conn.row_factory = sqlite3.Row
         conn.execute('PRAGMA foreign_keys;')
+        with conn:
+            cr = conn.cursor()
+            init_db(cr)
         return conn
 
-    def init_db(self):
-        with contextlib.closing(self.get_conn()) as conn:
-            with conn:
-                cr = conn.cursor()
-                cr.executescript('''
+
+def init_db(cr):
+    cr.executescript('''
 CREATE TABLE IF NOT EXISTS audiobooks (
     id INTEGER NOT NULL,
     title VARCHAR(256) NOT NULL,
@@ -49,7 +43,7 @@ CREATE TABLE IF NOT EXISTS audiofiles (
     audiobook_id INTEGER,
     title VARCHAR,
     file_path VARCHAR NOT NULL, -- Relative to audiobook.path
-    duration INTEGER,
+    duration REAL,
     sequence INTEGER NOT NULL,
     size INTEGER DEFAULT 0,
     PRIMARY KEY (id),
@@ -60,7 +54,7 @@ CREATE TABLE IF NOT EXISTS bookmarks (
     id INTEGER NOT NULL,
     audiofile_id INTEGER,
     audiobook_id INTEGER,
-    position INTEGER,
+    position REAL,
     date_added TIMESTAMP DEFAULT 0,
     PRIMARY KEY (id),
     UNIQUE (id),
@@ -133,7 +127,6 @@ def get_all_audiobooks(cr):
 SELECT
     *,
     a.date_added as "date_added [timestamp]",
-    b.date_added as "last_played [timestamp]",
     SUM(f.duration) AS duration
 FROM
     audiobooks AS a
@@ -141,10 +134,6 @@ JOIN
     audiofiles AS f
 ON
     a.id = f.audiobook_id
-LEFT JOIN
-    bookmarks AS b
-ON
-    a.id = b.audiobook_id
 GROUP BY
     f.audiobook_id
 ORDER BY

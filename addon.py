@@ -104,10 +104,6 @@ class Ausis(common.KodiPlugin):
                 'album': audiobook[b'title'],
                 'genre': 'Audiobook',
             }
-            if audiobook[b'last_played']:
-                info_labels.update({
-                    'lastplayed': audiobook[b'last_played'].strftime('%Y-%m-%d %H:%M:%S'),
-                })
             li.setInfo('music', info_labels)
 
             li.setInfo('video', {
@@ -279,7 +275,7 @@ def main():
     base_url, handle = sys.argv[0], int(sys.argv[1])
     args = utils.parse_query(sys.argv[2][1:])
     db_filename = common.get_db_path(database.DB_FILE_NAME)
-    db = database.AudioBookDB.get_db(db_filename)
+    db = database.AudioBookDB(db_filename)
     with contextlib.closing(db.get_conn()) as conn:
         with conn:
             cr = conn.cursor()
