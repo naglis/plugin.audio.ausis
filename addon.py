@@ -140,7 +140,7 @@ class Ausis(common.KodiPlugin):
                 url = self._build_url(
                     mode='resume', bookmark_id=bookmark[b'id'])
                 position = utils.format_duration(bookmark[b'position'])
-                li = kodigui.ListItem('Resume (%s)' % position)
+                li = kodigui.ListItem('[I]Resume (%s)[/I]' % position)
                 kodiplugin.addDirectoryItem(
                     handle=self._handle,
                     url=url,
@@ -217,54 +217,64 @@ class Ausis(common.KodiPlugin):
         total_dirs = len(dirs)
 
         for idx, subdir in enumerate(dirs, start=1):
-            if database.audiobook_exists(self._cr, subdir):
-                self.log('Audiobook: %s already exists, skipping.' % subdir)
-                continue
             abs_path = utils.encode_arg(os.path.join(directory, subdir))
-            audiofiles = list(utils.ifind_audio(abs_path))
-
             progress = int(100.0 * idx / total_dirs)
             dialog.update(progress)
 
-            if not audiofiles:
-                self.log('Subdirectory: %s contains no audiofiles' % abs_path)
-                continue
+            # Check if audiobook at this path is already in the database.
+            audiobook_id = database.get_audiobook_by_path(self._cr, subdir)
+            if audiobook_id:
+                self.log('Audiobook at path: %s already exists in the database'
+                         ' (ID: %s)' % (subdir, audiobook_id))
 
-            self.log('Subdirectory: %s contains: %d audiofiles' %
-                     (utils.decode_arg(abs_path), len(audiofiles)))
+            if not audiobook_id:
+                audiofiles = list(utils.ifind_audio(abs_path))
+                if not audiofiles:
+                    self.log(
+                        'Subdirectory: %s contains no audiofiles' % abs_path)
+                    continue
 
-            cover_files = list(utils.ifind_cover(abs_path))
-            cover = utils.decode_arg(cover_files[0]) if cover_files else None
-            fanart_files = list(utils.ifind_fanart(abs_path))
-            fanart = (
-                utils.decode_arg(fanart_files[0]) if fanart_files else None)
+                self.log('Subdirectory: %s contains: %d audiofiles' %
+                        (utils.decode_arg(abs_path), len(audiofiles)))
+                items, authors, albums = [], set(), set()
+                for fn in sorted(audiofiles):
+                    file_tags = tags.get_tags(fn)
+                    if file_tags.album:
+                        albums.add(file_tags.album)
+                    if file_tags.artist:
+                        authors.add(file_tags.artist)
+                    size = os.path.getsize(fn)
+                    items.append((
+                        file_tags.title,
+                        utils.decode_arg(fn),
+                        file_tags.duration,
+                        size,
+                    ))
+                title = albums.pop() if albums else subdir
 
-            items, authors, albums = [], set(), set()
-            for fn in sorted(audiofiles):
-                file_tags = tags.get_tags(fn)
-                if file_tags.album:
-                    albums.add(file_tags.album)
-                if file_tags.artist:
-                    authors.add(file_tags.artist)
-                size = os.path.getsize(fn)
-                items.append((
-                    file_tags.title,
-                    utils.decode_arg(fn),
-                    file_tags.duration,
-                    size,
-                ))
-            title = albums.pop() if albums else subdir
+                if authors:
+                    author = authors.pop()
+                else:
+                    self.log('Unknown artist: %s' % subdir)
+                    continue
 
-            if authors:
-                author = authors.pop()
-            else:
-                self.log('Unknown artist: %s' % subdir)
-                continue
+                audiobook_id = database.add_audiobook(
+                    self._cr, author, title, subdir, items)
 
-            database.add_audiobook(
-                self._cr, author, title, subdir, items, cover_path=cover,
-                fanart_path=fanart,
-            )
+            if not database.get_cover(self._cr, audiobook_id):
+                cover_files = list(utils.ifind_cover(abs_path))
+                if cover_files:
+                    database.set_cover(
+                        self._cr, audiobook_id,
+                        utils.decode_arg(cover_files[0]),
+                    )
+            if not database.get_fanart(self._cr, audiobook_id):
+                fanart_files = list(utils.ifind_fanart(abs_path))
+                if fanart_files:
+                    database.set_fanart(
+                        self._cr, audiobook_id,
+                        utils.decode_arg(fanart_files[0]),
+                    )
 
         self.log('Scan finished')
         dialog.close()

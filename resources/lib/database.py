@@ -83,7 +83,6 @@ INSERT INTO audiobooks (
     cr.execute(query, data)
     audiobook_id = cr.lastrowid
 
-    audiofile_ids = []
     for sequence, item in enumerate(files, start=1):
         title, file_path, duration, size = item
         query = '''
@@ -102,9 +101,8 @@ INSERT INTO audiofiles (
             size,
         )
         cr.execute(query, data)
-        audiofile_ids.append(cr.lastrowid)
 
-    return {audiobook_id: audiofile_ids}
+    return audiobook_id
 
 
 def audiobook_exists(cr, subdir):
@@ -244,3 +242,71 @@ LIMIT
     cr.execute(query, (audiobook_id,))
     result = cr.fetchone()
     return result if result else None
+
+
+def get_audiobook_by_path(cr, path):
+    query = '''
+SELECT
+    id
+FROM
+    audiobooks
+WHERE
+    path = ?
+LIMIT
+    1;'''
+    cr.execute(query, (path,))
+    result = cr.fetchone()
+    return result[0] if result else None
+
+
+def get_cover(cr, audiobook_id):
+    query = '''
+SELECT
+    cover_path
+FROM
+    audiobooks
+WHERE
+    id = ?
+LIMIT
+    1
+;'''
+    cr.execute(query, (audiobook_id,))
+    result = cr.fetchone()
+    return result[0] if result else None
+
+
+def set_cover(cr, audiobook_id, cover_path):
+    query = '''
+UPDATE
+    audiobooks
+SET
+    cover_path = ?
+WHERE
+    id = ?;'''
+    cr.execute(query, (cover_path, audiobook_id))
+
+
+def get_fanart(cr, audiobook_id):
+    query = '''
+SELECT
+    fanart_path
+FROM
+    audiobooks
+WHERE
+    id = ?
+LIMIT
+    1;'''
+    cr.execute(query, (audiobook_id,))
+    result = cr.fetchone()
+    return result[0] if result else None
+
+
+def set_fanart(cr, audiobook_id, fanart_path):
+    query = '''
+UPDATE
+    audiobooks
+SET
+    fanart_path = ?
+WHERE
+    id = ?;'''
+    cr.execute(query, (fanart_path, audiobook_id))
