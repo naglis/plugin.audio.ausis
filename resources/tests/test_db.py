@@ -20,6 +20,6 @@ class TestDatabase(unittest.TestCase):
         for table in ('audiobooks', 'audiofiles', 'bookmarks'):
             try:
                 conn.execute('SELECT * FROM %s;' % table)
-            except sqlite3.OperationalError as e:
+            except sqlite3.OperationalError:
                 self.fail('Table: %s was not created' % table)
         conn.close()
