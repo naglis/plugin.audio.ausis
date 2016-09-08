@@ -12,7 +12,7 @@
 		<summary lang="en">Audiobook support</summary>
         <description lang="en">Can't live without audiobooks? Love Kodi? Now these two awesome things can go together!</description>
 		<platform>linux</platform>
-		<license>GNU GENERAL PUBLIC LICENSE. Version 2, June 1991</license>
+		<license>GNU General Public License v2 (GPLv2)</license>
 		<source>https://github.com/naglis/plugin.audio.ausis</source>
 	</extension>
 </addon>
