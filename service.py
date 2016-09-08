@@ -6,7 +6,7 @@ import re
 
 import xbmc as kodi
 
-from resources.lib import common, database
+from resources.lib import common, db
 
 ITEM_PATTERN = re.compile(r'(?x)^ausis:item:(?P<id>\d+)$')
 
@@ -46,7 +46,7 @@ class AudioBookPlayer(kodi.Player):
                 return
             with self._db:
                 cr = self._db.cursor()
-                bookmark_id = database.add_bookmark(cr, audiofile_id, position)
+                bookmark_id = db.add_bookmark(cr, audiofile_id, position)
                 if bookmark_id:
                     kodi.log('Added bookmark: %d at: %s' % (
                         bookmark_id, position))
@@ -88,9 +88,9 @@ class AudioBookPlayer(kodi.Player):
 
 def main():
     monitor = kodi.Monitor()
-    db = database.AudioBookDB(common.get_db_path(database.DB_FILE_NAME))
+    database = db.AudioBookDB(common.get_db_path(db.DB_FILE_NAME))
     player = AudioBookPlayer()  # noqa
-    with contextlib.closing(db.get_conn()) as conn:
+    with contextlib.closing(database.get_conn()) as conn:
         player.set_connection(conn)
         while not monitor.abortRequested():
             if monitor.waitForAbort(10):

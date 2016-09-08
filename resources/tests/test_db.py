@@ -6,7 +6,7 @@ import sys
 import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../'))
 
-from lib import database
+from lib import db
 
 
 class TestDatabase(unittest.TestCase):
@@ -15,8 +15,8 @@ class TestDatabase(unittest.TestCase):
         super(TestDatabase, self).setUp()
 
     def test_tables_are_created(self):
-        db = database.AudioBookDB(':memory:')
-        conn = db.get_conn()
+        database = db.AudioBookDB(':memory:')
+        conn = database.get_conn()
         for table in ('audiobooks', 'audiofiles', 'bookmarks'):
             try:
                 conn.execute('SELECT * FROM %s;' % table)
