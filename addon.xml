@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.audio.ausis" name="ausis" version="0.1.0" provider-name="Naglis Jonaitis">
-	<requires>
-		<import addon="xbmc.python" version="2.20.0"/>
+    <requires>
+        <import addon="xbmc.python" version="2.20.0"/>
         <import addon="script.module.mutagen" version="1.22.0"/>
-	</requires>
-	<extension point="xbmc.python.pluginsource" library="addon.py">
-		<provides>audio</provides>
-	</extension>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="addon.py">
+        <provides>audio</provides>
+    </extension>
     <extension point="xbmc.service" library="service.py" start="login"/>
-	<extension point="xbmc.addon.metadata">
-		<summary lang="en">Audiobook support</summary>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Audiobook support plugin for Kodi</summary>
         <description lang="en">Can't live without audiobooks? Love Kodi? Now these two awesome things can go together!</description>
-		<platform>linux</platform>
-		<license>GNU General Public License v2 (GPLv2)</license>
-		<source>https://github.com/naglis/plugin.audio.ausis</source>
-	</extension>
+        <platform>linux</platform>
+        <license>GNU General Public License v2 (GPLv2)</license>
+        <source>https://github.com/naglis/plugin.audio.ausis</source>
+    </extension>
 </addon>
