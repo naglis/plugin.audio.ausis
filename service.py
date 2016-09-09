@@ -27,10 +27,10 @@ class AudioBookPlayer(kodi.Player):
         kodi.log('Started ausis AudioBookPlayer')
 
     def set_connection(self, conn):
-        self._db = conn
+        self._conn = conn
 
     def _bookmark(self):
-        if not self.was_playing_audio or not self._db:
+        if not self.was_playing_audio or not self._conn:
             return
         try:
             current = self.getMusicInfoTag()
@@ -44,8 +44,8 @@ class AudioBookPlayer(kodi.Player):
             audiofile_id = parse_id(current.getComment())
             if not audiofile_id:
                 return
-            with self._db:
-                cr = self._db.cursor()
+            with self._conn:
+                cr = self._conn.cursor()
                 bookmark_id = db.add_bookmark(cr, audiofile_id, position)
                 if bookmark_id:
                     kodi.log('Added bookmark: %d at: %s' % (
