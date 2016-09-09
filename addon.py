@@ -286,10 +286,9 @@ def main():
     args = utils.parse_query(sys.argv[2][1:])
     db_filename = common.get_db_path(db.DB_FILE_NAME)
     database = db.AudioBookDB(db_filename)
-    with contextlib.closing(database.get_conn()) as conn:
-        with conn:
-            cr = conn.cursor()
-            Ausis(base_url, handle, addon, cr).run(args)
+    with contextlib.closing(database.get_conn()) as conn, conn as conn:
+        cr = conn.cursor()
+        Ausis(base_url, handle, addon, cr).run(args)
 
 if __name__ == '__main__':
     main()
