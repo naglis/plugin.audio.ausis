@@ -5,6 +5,8 @@ import collections
 
 import mutagen
 
+import utils
+
 
 Tags = collections.namedtuple(
     'Tags', ['artist', 'album', 'title', 'narrator', 'duration'])
@@ -12,7 +14,7 @@ Tags = collections.namedtuple(
 
 def single_item(tags):
     if isinstance(tags, list):
-        return tags[0]
+        return utils.first_of(tags)
     else:
         return tags
 
