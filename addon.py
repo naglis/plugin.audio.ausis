@@ -24,11 +24,13 @@ AUDIOFILE_SORT_METHODS = (
 )
 AUDIOBOOK_SORT_METHODS = (
     kodiplugin.SORT_METHOD_DATEADDED,
+    kodiplugin.SORT_METHOD_LASTPLAYED,
     kodiplugin.SORT_METHOD_NONE,
     kodiplugin.SORT_METHOD_TITLE,
     kodiplugin.SORT_METHOD_TITLE_IGNORE_THE,
     kodiplugin.SORT_METHOD_UNSORTED,
 )
+DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 
 class Ausis(common.KodiPlugin):
@@ -108,8 +110,12 @@ class Ausis(common.KodiPlugin):
 
             li.setInfo('video', {
                 'dateadded': audiobook[b'date_added'].strftime(
-                    '%Y-%m-%d %H:%M:%S'),
+                    DATETIME_FORMAT),
             })
+            if audiobook[b'last_played']:
+                li.setInfo('video', {
+                    'lastplayed': audiobook[b'last_played'],
+                })
             if fanart:
                 li.setProperty('Fanart_Image', fanart)
             kodiplugin.addDirectoryItem(

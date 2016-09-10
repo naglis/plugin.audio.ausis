@@ -123,19 +123,35 @@ LIMIT
 def get_all_audiobooks(cr):
     query = '''
 SELECT
-    *,
-    a.date_added as "date_added [timestamp]",
-    SUM(f.duration) AS duration
+    a.*,
+    a.date_added,
+    SUM(f.duration) AS duration,
+    b.last_played -- Here, even though bookmarks.date_added is a TIMESTAMP,
+                  -- it will not be cast to datetime.datetime by sqlite3.
 FROM
     audiobooks AS a
 JOIN
     audiofiles AS f
 ON
     a.id = f.audiobook_id
+LEFT JOIN (
+    SELECT
+        bookmarks.audiobook_id,
+        MAX(bookmarks.date_added) AS last_played
+    FROM
+        bookmarks
+    GROUP BY
+        bookmarks.audiobook_id
+    ORDER By
+        date_added DESC
+    ) AS b
+ON
+    a.id = b.audiobook_id
 GROUP BY
     f.audiobook_id
 ORDER BY
-    a.date_added;
+    a.id ASC,
+    a.title ASC;
 '''
     cr.execute(query)
     return cr.fetchall()
