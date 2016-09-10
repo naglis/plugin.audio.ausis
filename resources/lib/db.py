@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 
 import sqlite3
 
+import utils
+
 
 DB_FILE_NAME = 'ausis.sqlite'
 
@@ -76,16 +78,31 @@ INSERT INTO audiobooks (
     summary,
     date_added
 ) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, DATETIME('now')
+    :author,
+    :title,
+    :narrator,
+    :path,
+    :cover_path,
+    :fanart_path,
+    :summary,
+    DATETIME('now')
 );'''
-    data = (author, title, narrator, path, cover_path, fanart_path,
-            summary)
-    cr.execute(query, data)
+    cr.execute(query, locals())
     audiobook_id = cr.lastrowid
 
+    items = []
     for sequence, item in enumerate(files, start=1):
         title, file_path, duration, size = item
-        query = '''
+        items.append({
+            'audiobook_id': audiobook_id,
+            'title': title,
+            'file_path': file_path,
+            'duration': duration,
+            'sequence': sequence,
+            'size': size,
+        })
+
+    query = '''
 INSERT INTO audiofiles (
     audiobook_id,
     title,
@@ -94,13 +111,14 @@ INSERT INTO audiofiles (
     sequence,
     size
 ) VALUES (
-    ?, ?, ?, ?, ?, ?
+    :audiobook_id,
+    :title,
+    :file_path,
+    :duration,
+    :sequence,
+    :size
 );'''
-        data = (
-            audiobook_id, title, file_path, duration, sequence,
-            size,
-        )
-        cr.execute(query, data)
+    cr.executemany(query, items)
 
     return audiobook_id
 
@@ -112,10 +130,10 @@ SELECT
 FROM
     audiobooks
 WHERE
-    path = ?
+    path = :path
 LIMIT
     1;'''
-    cr.execute(query, (subdir,))
+    cr.execute(query, {'path': subdir})
     res = cr.fetchone()
     return bool(res)
 
@@ -148,36 +166,40 @@ LEFT JOIN (
 ON
     a.id = b.audiobook_id
 GROUP BY
-    f.audiobook_id
-ORDER BY
-    a.id ASC,
-    a.title ASC;
+    f.audiobook_id;
 '''
     cr.execute(query)
     return cr.fetchall()
 
 
 def get_audiobook(cr, audiobook_id):
-    query = 'SELECT * FROM audiobooks WHERE id = ?;'
-    cr.execute(query, (audiobook_id,))
+    query = 'SELECT * FROM audiobooks WHERE id = :audiobook_id;'
+    cr.execute(query, locals())
     audiobook = cr.fetchone()
     query = '''
-SELECT * FROM audiofiles WHERE audiobook_id = ? ORDER BY sequence ASC;'''
-    cr.execute(query, (audiobook_id,))
-    items = cr.fetchall()
-    return audiobook, items
+SELECT
+    *
+FROM
+    audiofiles
+WHERE
+    audiobook_id = :audiobook_id
+ORDER BY
+    sequence ASC
+;'''
+    cr.execute(query, locals())
+    return audiobook, cr.fetchall()
 
 
 def get_remaining_audiofiles(cr, audiofile_id):
     query = '''
-SELECT audiobook_id, sequence FROM audiofiles WHERE id = ?;'''
-    cr.execute(query, (audiofile_id,))
+SELECT audiobook_id, sequence FROM audiofiles WHERE id = :audiofile_id;'''
+    cr.execute(query, locals())
     result = cr.fetchone()
     if not result:
         return None, []
     audiobook_id, sequence = result
-    query = 'SELECT * FROM audiobooks WHERE id = ?;'
-    cr.execute(query, (audiobook_id,))
+    query = 'SELECT * FROM audiobooks WHERE id = :audiobook_id;'
+    cr.execute(query, locals())
     audiobook = cr.fetchone()
 
     query = '''
@@ -186,35 +208,53 @@ SELECT
 FROM
     audiofiles
 WHERE
-    audiobook_id = ?
+    audiobook_id = :audiobook_id
 AND
-    sequence >= ?
+    sequence >= :sequence
 ORDER BY
     sequence
 ASC;'''
-    cr.execute(query, (audiobook_id, sequence))
-    items = cr.fetchall()
-    return audiobook, items
+    cr.execute(query, locals())
+    return audiobook, cr.fetchall()
 
 
 def add_bookmark(cr, audiofile_id, position):
     query = '''
-SELECT id, audiobook_id, position FROM bookmarks WHERE audiofile_id = ?;'''
-    cr.execute(query, (audiofile_id,))
+SELECT
+    id,
+    audiobook_id,
+    position
+FROM
+    bookmarks
+WHERE
+    audiofile_id = :audiofile_id
+;'''
+    cr.execute(query, locals())
     result = cr.fetchone()
 
     if result:
         # Update existing bookmark.
         bookmark_id, audiobook_id, old_position = result
         query = '''
-UPDATE bookmarks SET position = ?, date_added = DATETIME('now') WHERE id = ?;
-'''
-        cr.execute(query, (position, bookmark_id))
+UPDATE
+    bookmarks
+SET
+    position = :position,
+    date_added = DATETIME('now')
+WHERE
+    id = :bookmark_id
+;'''
+        cr.execute(query, locals())
     else:
         # Add new bookmark.
         query = '''
-SELECT audiobook_id FROM audiofiles WHERE id = ?;'''
-        cr.execute(query, (audiofile_id,))
+SELECT
+    audiobook_id
+FROM
+    audiofiles
+WHERE id = :audiofile_id
+;'''
+        cr.execute(query, locals())
         result = cr.fetchone()
         if not result:
             return False
@@ -225,15 +265,20 @@ INSERT INTO bookmarks (
     audiobook_id,
     position,
     date_added
-) VALUES (?, ?, ?, DATETIME('now'));'''
-        cr.execute(query, (audiofile_id, audiobook_id, position))
+) VALUES (
+    :audiofile_id,
+    :audiobook_id,
+    :position,
+    DATETIME('now')
+);'''
+        cr.execute(query, locals())
         bookmark_id = cr.lastrowid
     return bookmark_id
 
 
 def get_bookmark(cr, bookmark_id):
-    query = 'SELECT * FROM bookmarks WHERE id = ?;'
-    cr.execute(query, (bookmark_id,))
+    query = 'SELECT * FROM bookmarks WHERE id = :bookmark_id;'
+    cr.execute(query, locals())
     result = cr.fetchone()
     return result if result else None
 
@@ -249,13 +294,13 @@ INNER JOIN
 ON
     a.id = b.audiofile_id
 WHERE
-    b.audiobook_id = ?
+    b.audiobook_id = :audiobook_id
 ORDER BY
     a.sequence DESC,
     b.position DESC
 LIMIT
     1;'''
-    cr.execute(query, (audiobook_id,))
+    cr.execute(query, locals())
     result = cr.fetchone()
     return result if result else None
 
@@ -267,12 +312,12 @@ SELECT
 FROM
     audiobooks
 WHERE
-    path = ?
+    path = :path
 LIMIT
     1;'''
-    cr.execute(query, (path,))
+    cr.execute(query, locals())
     result = cr.fetchone()
-    return result[0] if result else None
+    return utils.first_of(result) if result else None
 
 
 def get_cover(cr, audiobook_id):
@@ -282,13 +327,13 @@ SELECT
 FROM
     audiobooks
 WHERE
-    id = ?
+    id = :audiobook_id
 LIMIT
     1
 ;'''
-    cr.execute(query, (audiobook_id,))
+    cr.execute(query, locals())
     result = cr.fetchone()
-    return result[0] if result else None
+    return utils.first_of(result) if result else None
 
 
 def set_cover(cr, audiobook_id, cover_path):
@@ -296,10 +341,11 @@ def set_cover(cr, audiobook_id, cover_path):
 UPDATE
     audiobooks
 SET
-    cover_path = ?
+    cover_path = :cover_path
 WHERE
-    id = ?;'''
-    cr.execute(query, (cover_path, audiobook_id))
+    id = :audiobook_id
+;'''
+    cr.execute(query, locals())
 
 
 def get_fanart(cr, audiobook_id):
@@ -309,12 +355,13 @@ SELECT
 FROM
     audiobooks
 WHERE
-    id = ?
+    id = :audiobook_id
 LIMIT
-    1;'''
-    cr.execute(query, (audiobook_id,))
+    1
+;'''
+    cr.execute(query, locals())
     result = cr.fetchone()
-    return result[0] if result else None
+    return utils.first_of(result) if result else None
 
 
 def set_fanart(cr, audiobook_id, fanart_path):
@@ -322,7 +369,8 @@ def set_fanart(cr, audiobook_id, fanart_path):
 UPDATE
     audiobooks
 SET
-    fanart_path = ?
+    fanart_path = :fanart_path
 WHERE
-    id = ?;'''
-    cr.execute(query, (fanart_path, audiobook_id))
+    id = :audiobook_id
+;'''
+    cr.execute(query, locals())
