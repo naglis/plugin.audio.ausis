@@ -13,7 +13,7 @@ AUDIO_EXTENSIONS = ('mp3', 'ogg')
 COVER_FILENAMES = ('cover', 'folder', 'cover[\s_-]?art')
 FANART_FILENAMES = ('fan[\s_-]?art',)
 
-first_item = operator.itemgetter(0)
+first_of = operator.itemgetter(0)
 
 
 def decode_arg(arg):

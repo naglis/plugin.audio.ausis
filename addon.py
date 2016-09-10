@@ -272,14 +272,14 @@ class Ausis(common.KodiPlugin):
                 if cover_files:
                     db.set_cover(
                         self._cr, audiobook_id,
-                        utils.decode_arg(utils.first_item(cover_files)),
+                        utils.decode_arg(utils.first_of(cover_files)),
                     )
             if not db.get_fanart(self._cr, audiobook_id):
                 fanart_files = list(utils.ifind_fanart(abs_path))
                 if fanart_files:
                     db.set_fanart(
                         self._cr, audiobook_id,
-                        utils.decode_arg(utils.first_item(fanart_files)),
+                        utils.decode_arg(utils.first_of(fanart_files)),
                     )
 
         self.log('Scan finished')
