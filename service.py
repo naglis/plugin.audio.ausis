@@ -8,6 +8,7 @@ import xbmc as kodi
 
 from resources.lib import common, db
 
+DB_PATH = common.get_db_path(db.DB_FILE_NAME)
 ITEM_PATTERN = re.compile(r'(?x)^ausis:item:(?P<id>\d+)$')
 
 
@@ -20,11 +21,14 @@ def parse_id(comment):
 class AudioBookPlayer(kodi.Player):
     '''Customized player which stores bookmarks.'''
 
-    def __init__(self, *args, **kwargs):
-        super(AudioBookPlayer, self).__init__(*args, **kwargs)
-        self._db_path = common.get_db_path(db.DB_FILE_NAME)
-
     def _bookmark(self):
+        '''
+        Adds a bookmark on the currently playing audiofile.
+
+        Currently, we store the audiofile's ID in the comment of each
+        :class:`xbmcgui.ListItem` and use it to get the currently
+        playing audiofile.
+        '''
         try:
             current = self.getMusicInfoTag()
             position = self.getTime()
@@ -36,7 +40,7 @@ class AudioBookPlayer(kodi.Player):
             audiofile_id = parse_id(current.getComment())
             if not audiofile_id:
                 return
-            database = db.AudioBookDB(self._db_path)
+            database = db.AudioBookDB(DB_PATH)
             with contextlib.closing(database.get_conn()) as conn, conn as conn:
                 cr = conn.cursor()
                 bookmark_id = db.add_bookmark(cr, audiofile_id, position)
