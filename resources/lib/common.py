@@ -15,6 +15,10 @@ def get_db_path(db_name):
     return os.path.join(kodi_db_dir, db_name)
 
 
+def italic(s):
+    return '[I]{0:}[/I]'.format(s)
+
+
 class KodiPlugin(object):
 
     def __init__(self, base_url, handle, addon):

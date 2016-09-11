@@ -128,6 +128,8 @@ class Ausis(common.KodiPlugin):
         kodiplugin.endOfDirectory(self._handle)
 
     def mode_audiobook(self, args):
+        for sort_method in AUDIOFILE_SORT_METHODS:
+            kodiplugin.addSortMethod(self._handle, sort_method)
         audiobook_id = args.get('audiobook_id')
         if audiobook_id:
             audiobook, items = db.get_audiobook(self._cr, audiobook_id)
@@ -137,16 +139,18 @@ class Ausis(common.KodiPlugin):
             fanart = audiobook[b'fanart_path']
             if fanart:
                 fanart = os.path.join(audiobook[b'path'], fanart)
+
             bookmark = db.get_audiobook_last_bookmark(
                 self._cr, audiobook_id)
-
-            for sort_method in AUDIOFILE_SORT_METHODS:
-                kodiplugin.addSortMethod(self._handle, sort_method)
             if bookmark:
                 url = self._build_url(
                     mode='resume', bookmark_id=bookmark[b'id'])
                 position = utils.format_duration(bookmark[b'position'])
-                li = kodigui.ListItem('[I]Resume (%s)[/I]' % position)
+                li = kodigui.ListItem(
+                    common.italic(
+                        self._t(30013) % (bookmark[b'title'], position)
+                    )
+                )
                 kodiplugin.addDirectoryItem(
                     handle=self._handle,
                     url=url,

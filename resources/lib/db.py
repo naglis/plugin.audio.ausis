@@ -277,7 +277,19 @@ INSERT INTO bookmarks (
 
 
 def get_bookmark(cr, bookmark_id):
-    query = 'SELECT * FROM bookmarks WHERE id = :bookmark_id;'
+    query = '''
+SELECT
+    b.*,
+    a.title
+FROM
+    bookmarks AS b
+INNER JOIN
+    audiofiles AS a
+ON
+    a.id = b.audiofile_id
+WHERE
+    id = :bookmark_id
+;'''
     cr.execute(query, locals())
     result = cr.fetchone()
     return result if result else None
