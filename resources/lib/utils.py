@@ -45,7 +45,7 @@ def parse_query(query, defaults=None):
     args = urlparse.parse_qs(query)
     for key, values in args.iteritems():
         if len(values) == 1:
-            d[decode_arg(key)] = decode_arg(values[0])
+            d[decode_arg(key)] = decode_arg(first_of(values))
         else:
             d[decode_arg(key)] = decode_list(values)
     return d
