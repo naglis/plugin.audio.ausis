@@ -195,11 +195,8 @@ class Ausis(common.KodiPlugin):
             audiobook_path = audiobook[b'path']
             playlist = kodi.PlayList(kodi.PLAYLIST_MUSIC)
             playlist.clear()
-            for idx, item in enumerate(items):
+            for item in items:
                 li = self._prepare_audiofile_listitem(audiobook, item)
-                # if idx == 0:
-                    # li.setProperty(
-                        # 'StartOffset', '%.2f' % bookmark[b'position'])
                 url = os.path.join(audiobook_path, item[b'file_path'])
                 playlist.add(url, li)
             player = kodi.Player()
@@ -237,11 +234,11 @@ class Ausis(common.KodiPlugin):
                 audiofiles = list(utils.ifind_audio(abs_path))
                 if not audiofiles:
                     self.log(
-                        'Subdirectory: %s contains no audiofiles' % abs_path)
+                        'Subdirectory: %s contains no audiofiles' % subdir)
                     continue
 
                 self.log('Subdirectory: %s contains: %d audiofiles' %
-                        (utils.decode_arg(abs_path), len(audiofiles)))
+                         (utils.decode_arg(abs_path), len(audiofiles)))
                 items, authors, albums = [], set(), set()
                 for fn in sorted(audiofiles):
                     file_tags = tags.get_tags(fn)
