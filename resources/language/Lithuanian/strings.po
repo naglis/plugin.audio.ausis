@@ -61,3 +61,7 @@ msgstr "Taip"
 msgctxt "#30012"
 msgid "No"
 msgstr "Ne"
+
+msgctxt "#30013"
+msgid "Resume %s (%s)"
+msgstr "Tęsti %s (%s)"

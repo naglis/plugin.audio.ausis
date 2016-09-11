@@ -61,3 +61,7 @@ msgstr ""
 msgctxt "#30012"
 msgid "No"
 msgstr ""
+
+msgctxt "#30013"
+msgid "Resume %s (%s)"
+msgstr ""
