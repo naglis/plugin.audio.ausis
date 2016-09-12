@@ -288,7 +288,7 @@ INNER JOIN
 ON
     a.id = b.audiofile_id
 WHERE
-    id = :bookmark_id
+    b.id = :bookmark_id
 ;'''
     cr.execute(query, locals())
     result = cr.fetchone()
