@@ -2,7 +2,6 @@
 from __future__ import unicode_literals
 
 import os
-import collections
 
 import utils
 
@@ -43,7 +42,7 @@ def scan(path, progress_cb=None):
                 progress_cb(int(100 * idx / total))
             try:
                 m = scan_subdir(root, subdir)
-            except SkipAudiobookDir as e:
+            except SkipAudiobookDir:
                 pass
             else:
                 yield subdir, m

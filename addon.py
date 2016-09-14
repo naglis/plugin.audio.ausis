@@ -9,7 +9,6 @@ import xbmc as kodi
 import xbmcaddon as kodiaddon
 import xbmcgui as kodigui
 import xbmcplugin as kodiplugin
-import xbmcvfs as kodivfs
 
 from resources.lib import common, db, tags, scan, utils
 
@@ -245,7 +244,8 @@ class Ausis(common.KodiPlugin):
                     audiofiles = sorted(m.get('audio', []))
                     if not audiofiles:
                         self.log(
-                            'Subdirectory: %s contains no audiofiles' % u_subdir)
+                            'Subdirectory: %s contains no audiofiles' %
+                            u_subdir)
                         continue
                     self.log('Subdirectory: %s contains: %d audiofiles' %
                              (u_subdir, len(audiofiles)))

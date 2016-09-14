@@ -82,6 +82,8 @@ cover_matcher = make_regex_filename_matcher(
     filenames=COVER_FILENAMES, extensions=IMAGE_EXTENSIONS)
 fanart_matcher = make_regex_filename_matcher(
     filenames=FANART_FILENAMES, extensions=IMAGE_EXTENSIONS)
+
+
 def ignore_matcher(fn):
     return fn == IGNORE_FILENAME
 
