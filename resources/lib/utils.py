@@ -13,6 +13,9 @@ AUDIO_EXTENSIONS = (r'mp3', r'ogg')
 COVER_FILENAMES = (r'cover', r'folder', r'cover[\s_-]?art')
 FANART_FILENAMES = (r'fan[\s_-]?art',)
 
+# Regular expression for parsing audiofile ID from the comment field.
+ITEM_PATTERN = re.compile(r'(?x)^ausis:item:(?P<id>\d+)$')
+
 first_of = operator.itemgetter(0)
 
 
@@ -88,3 +91,9 @@ def format_duration(s):
     m, s = divmod(s, 60)
     h, m = divmod(m, 60)
     return '%d:%02d:%02d' % (h, m, s)
+
+
+def parse_id(comment):
+    m = ITEM_PATTERN.match(comment)
+    if m is not None:
+        return int(m.group('id'))

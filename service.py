@@ -6,16 +6,9 @@ import re
 
 import xbmc as kodi
 
-from resources.lib import common, db
+from resources.lib import common, db, utils
 
 DB_PATH = common.get_db_path(db.DB_FILE_NAME)
-ITEM_PATTERN = re.compile(r'(?x)^ausis:item:(?P<id>\d+)$')
-
-
-def parse_id(comment):
-    m = ITEM_PATTERN.match(comment)
-    if m is not None:
-        return int(m.group('id'))
 
 
 class AudioBookPlayer(kodi.Player):
@@ -37,7 +30,7 @@ class AudioBookPlayer(kodi.Player):
         else:
             if not current:
                 return
-            audiofile_id = parse_id(current.getComment())
+            audiofile_id = utils.parse_id(current.getComment())
             if not audiofile_id:
                 return
             database = db.AudioBookDB(DB_PATH)
