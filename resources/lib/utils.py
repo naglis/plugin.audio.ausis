@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import functools
 import operator
-import os
 import re
 import urlparse
 
@@ -69,14 +67,6 @@ def make_regex_filename_matcher(filenames=None, extensions=None):
     return matcher
 
 
-def iscan_path(path, matcher):
-    path_join = os.path.join
-    for subdir, _, files in os.walk(path):
-        for fn in files:
-            if matcher(fn):
-                yield path_join(subdir, fn)
-
-
 audiofile_matcher = make_regex_filename_matcher(extensions=AUDIO_EXTENSIONS)
 cover_matcher = make_regex_filename_matcher(
     filenames=COVER_FILENAMES, extensions=IMAGE_EXTENSIONS)
@@ -86,10 +76,6 @@ fanart_matcher = make_regex_filename_matcher(
 
 def ignore_matcher(fn):
     return fn == IGNORE_FILENAME
-
-ifind_audio = functools.partial(iscan_path, matcher=audiofile_matcher)
-ifind_cover = functools.partial(iscan_path, matcher=cover_matcher)
-ifind_fanart = functools.partial(iscan_path, matcher=fanart_matcher)
 
 
 def format_duration(s):
