@@ -12,6 +12,7 @@ IMAGE_EXTENSIONS = (r'jpg', r'jpeg', r'png')
 AUDIO_EXTENSIONS = (r'mp3', r'ogg')
 COVER_FILENAMES = (r'cover', r'folder', r'cover[\s_-]?art')
 FANART_FILENAMES = (r'fan[\s_-]?art',)
+IGNORE_FILENAME = b'.ausis_ignore'
 
 # Regular expression for parsing audiofile ID from the comment field.
 ITEM_PATTERN = re.compile(r'(?x)^ausis:item:(?P<id>\d+)$')
@@ -81,6 +82,8 @@ cover_matcher = make_regex_filename_matcher(
     filenames=COVER_FILENAMES, extensions=IMAGE_EXTENSIONS)
 fanart_matcher = make_regex_filename_matcher(
     filenames=FANART_FILENAMES, extensions=IMAGE_EXTENSIONS)
+def ignore_matcher(fn):
+    return fn == IGNORE_FILENAME
 
 ifind_audio = functools.partial(iscan_path, matcher=audiofile_matcher)
 ifind_cover = functools.partial(iscan_path, matcher=cover_matcher)
