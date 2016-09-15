@@ -12,25 +12,6 @@ import xbmcplugin as kodiplugin
 
 from resources.lib import common, db, tags, scan, utils
 
-AUDIOFILE_SORT_METHODS = (
-    kodiplugin.SORT_METHOD_FILE,
-    kodiplugin.SORT_METHOD_FULLPATH,
-    kodiplugin.SORT_METHOD_NONE,
-    kodiplugin.SORT_METHOD_TITLE,
-    kodiplugin.SORT_METHOD_TITLE_IGNORE_THE,
-    kodiplugin.SORT_METHOD_TRACKNUM,
-    kodiplugin.SORT_METHOD_UNSORTED,
-)
-AUDIOBOOK_SORT_METHODS = (
-    kodiplugin.SORT_METHOD_DATEADDED,
-    kodiplugin.SORT_METHOD_LASTPLAYED,
-    kodiplugin.SORT_METHOD_NONE,
-    kodiplugin.SORT_METHOD_TITLE,
-    kodiplugin.SORT_METHOD_TITLE_IGNORE_THE,
-    kodiplugin.SORT_METHOD_UNSORTED,
-)
-DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
-
 
 class Ausis(common.KodiPlugin):
 
@@ -86,7 +67,7 @@ class Ausis(common.KodiPlugin):
                 )
                 return
 
-        for sort_method in AUDIOBOOK_SORT_METHODS:
+        for sort_method in common.AUDIOBOOK_SORT_METHODS:
             kodiplugin.addSortMethod(self._handle, sort_method)
 
         for audiobook in audiobooks:
@@ -111,7 +92,7 @@ class Ausis(common.KodiPlugin):
 
             li.setInfo('video', {
                 'dateadded': audiobook[b'date_added'].strftime(
-                    DATETIME_FORMAT),
+                    common.DATETIME_FORMAT),
             })
             if audiobook[b'last_played']:
                 li.setInfo('video', {
@@ -129,7 +110,7 @@ class Ausis(common.KodiPlugin):
         kodiplugin.endOfDirectory(self._handle)
 
     def mode_audiobook(self, args):
-        for sort_method in AUDIOFILE_SORT_METHODS:
+        for sort_method in common.AUDIOFILE_SORT_METHODS:
             kodiplugin.addSortMethod(self._handle, sort_method)
         audiobook_id = args.get('audiobook_id')
         if audiobook_id:

@@ -7,8 +7,29 @@ import os
 import urllib
 
 import xbmc as kodi
+import xbmcplugin as kodiplugin
 
 import utils
+
+
+AUDIOFILE_SORT_METHODS = (
+    kodiplugin.SORT_METHOD_FILE,
+    kodiplugin.SORT_METHOD_FULLPATH,
+    kodiplugin.SORT_METHOD_NONE,
+    kodiplugin.SORT_METHOD_TITLE,
+    kodiplugin.SORT_METHOD_TITLE_IGNORE_THE,
+    kodiplugin.SORT_METHOD_TRACKNUM,
+    kodiplugin.SORT_METHOD_UNSORTED,
+)
+AUDIOBOOK_SORT_METHODS = (
+    kodiplugin.SORT_METHOD_DATEADDED,
+    kodiplugin.SORT_METHOD_LASTPLAYED,
+    kodiplugin.SORT_METHOD_NONE,
+    kodiplugin.SORT_METHOD_TITLE,
+    kodiplugin.SORT_METHOD_TITLE_IGNORE_THE,
+    kodiplugin.SORT_METHOD_UNSORTED,
+)
+DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 
 def get_db_path(db_name):
