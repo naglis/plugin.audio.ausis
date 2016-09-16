@@ -58,3 +58,7 @@ class TestDatabase(unittest.TestCase):
             cr = conn.cursor()
             db.add_audiobook(cr, *TEST_AUDIOBOOK)
             self.assertTrue(db.audiobook_exists(cr, TEST_PATH))
+            self.assertFalse(
+                db.audiobook_exists(cr, 'NON_EXISTING_PATH'),
+                msg='Audiobook at non-existing path was found',
+            )
