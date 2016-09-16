@@ -53,6 +53,24 @@ class TestDatabase(unittest.TestCase):
             result = cr.fetchone()
             self.assertEqual(result[0], 1)
 
+    def test_get_all_audiobooks(self):
+        with self.conn as conn:
+            cr = conn.cursor()
+            audiobook_id = db.add_audiobook(cr, *TEST_AUDIOBOOK)
+            audiobooks = db.get_all_audiobooks(cr)
+            self.assertEqual(
+                len(audiobooks), 1, 'Incorrect number of audiobooks')
+            self.assertEqual(audiobooks[0][b'id'], audiobook_id)
+
+    def test_get_audiobook(self):
+        with self.conn as conn:
+            cr = conn.cursor()
+            audiobook_id = db.add_audiobook(cr, *TEST_AUDIOBOOK)
+            audiobook, items = db.get_audiobook(cr, audiobook_id)
+            self.assertEqual(audiobook[b'id'], audiobook_id)
+            self.assertEqual(
+                len(items), 1, 'Incorrect number of audiofiles')
+
     def test_get_audiobook_by_path(self):
         with self.conn as conn:
             cr = conn.cursor()
