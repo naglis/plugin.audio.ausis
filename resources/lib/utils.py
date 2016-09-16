@@ -79,9 +79,11 @@ def ignore_matcher(fn):
 
 
 def format_duration(s):
+    sign = '-' if s < 0 else ''
+    s = abs(s)
     m, s = divmod(s, 60)
     h, m = divmod(m, 60)
-    return '%d:%02d:%02d' % (h, m, s)
+    return '%s%d:%02d:%02d' % (sign, h, m, s)
 
 
 def parse_id(comment):
