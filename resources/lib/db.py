@@ -122,21 +122,6 @@ INSERT INTO audiofiles (
     return audiobook_id
 
 
-def audiobook_exists(cr, path):
-    query = '''
-SELECT
-    *
-FROM
-    audiobooks
-WHERE
-    path = :path
-LIMIT
-    1;'''
-    cr.execute(query, locals())
-    res = cr.fetchone()
-    return bool(res)
-
-
 def get_all_audiobooks(cr):
     query = '''
 SELECT

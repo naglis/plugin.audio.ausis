@@ -53,13 +53,14 @@ class TestDatabase(unittest.TestCase):
             result = cr.fetchone()
             self.assertEqual(result[0], 1)
 
-    def test_audiobook_exists(self):
+    def test_get_audiobook_by_path(self):
         with self.conn as conn:
             cr = conn.cursor()
-            db.add_audiobook(cr, *TEST_AUDIOBOOK)
-            self.assertTrue(db.audiobook_exists(cr, TEST_PATH))
+            audiobook_id = db.add_audiobook(cr, *TEST_AUDIOBOOK)
+            self.assertEqual(
+                audiobook_id, db.get_audiobook_by_path(cr, TEST_PATH))
             self.assertFalse(
-                db.audiobook_exists(cr, 'NON_EXISTING_PATH'),
+                db.get_audiobook_by_path(cr, 'NON_EXISTING_PATH'),
                 msg='Audiobook at non-existing path was found',
             )
 
