@@ -19,7 +19,13 @@ class Ausis(common.KodiPlugin):
         super(Ausis, self).__init__(base_url, handle, addon)
         self._cr = cr
 
-    def _prepare_audiofile_listitem(self, audiobook_dir, audiobook, item):
+    def _prepare_audiofile_listitem(self, audiobook_dir, audiobook, item,
+                                    data=None):
+        data = {} if data is None else data
+        d = {
+            'item': item[b'id'],
+        }
+        d.update(data)
         audiobook_path = audiobook[b'path']
         cover = audiobook[b'cover_path']
         if cover:
@@ -35,7 +41,7 @@ class Ausis(common.KodiPlugin):
             'artist': audiobook[b'author'],
             'title': item[b'title'],
             'genre': 'Audiobook',
-            'comment': 'ausis:item:%d' % item[b'id'],
+            'comment': common.dump_comment(d),
             'playcount': 0,
             'size': item[b'size'],
             'count': item[b'sequence'],
@@ -193,15 +199,17 @@ class Ausis(common.KodiPlugin):
             playlist = kodi.PlayList(kodi.PLAYLIST_MUSIC)
             playlist.clear()
             for item in items:
+                offset = bookmark[b'position']
                 li = self._prepare_audiofile_listitem(
-                    audiobook_dir, audiobook, item)
+                    audiobook_dir, audiobook, item, data={'offset': offset})
+                li.setProperty('StartOffset', '{0:.2f}'.format(offset))
                 url = os.path.join(
                     audiobook_dir, audiobook_path, item[b'file_path'])
                 playlist.add(url, li)
             player = kodi.Player()
             player.play(playlist)
-            kodi.sleep(500)
-            player.seekTime(bookmark[b'position'])
+            # kodi.sleep(500)
+            # player.seekTime(bookmark[b'position'])
         else:
             self.log('No bookmark ID provided!', level=kodi.LOGERROR)
 

@@ -29,13 +29,16 @@ class AudioBookPlayer(kodi.Player):
         else:
             if not current:
                 return
-            audiofile_id = utils.parse_id(current.getComment())
+            data = common.parse_comment(current.getComment())
+            audiofile_id, offset = data.get('item'), data.get('offset') or 0
             if not audiofile_id:
                 return
+            position = offset + position
             database = db.AudioBookDB(DB_PATH)
             with contextlib.closing(database.get_conn()) as conn, conn as conn:
                 cr = conn.cursor()
-                bookmark_id = db.add_bookmark(cr, audiofile_id, position)
+                bookmark_id = db.add_bookmark(
+                    cr, audiofile_id, position)
                 if bookmark_id:
                     kodi.log('Added bookmark: %d at: %s' % (
                         bookmark_id, position))

@@ -41,6 +41,16 @@ def italic(s):
     return '[I]{0:}[/I]'.format(s)
 
 
+def parse_comment(comment):
+    if comment.startswith('ausis:'):
+        return utils.load_data(comment[len('ausis:'):])
+    return {}
+
+
+def dump_comment(data):
+    return 'ausis:{0:s}'.format(utils.dump_data(data))
+
+
 class KodiPlugin(object):
 
     def __init__(self, base_url, handle, addon):

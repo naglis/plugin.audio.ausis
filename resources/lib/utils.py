@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import base64
+import json
 import operator
 import re
 import urlparse
@@ -11,9 +13,6 @@ AUDIO_EXTENSIONS = (r'mp3', r'ogg')
 COVER_FILENAMES = (r'cover', r'folder', r'cover[\s_-]?art')
 FANART_FILENAMES = (r'fan[\s_-]?art',)
 IGNORE_FILENAME = b'.ausis_ignore'
-
-# Regular expression for parsing audiofile ID from the comment field.
-ITEM_PATTERN = re.compile(r'(?x)^ausis:item:(?P<id>\d+)$')
 
 first_of = operator.itemgetter(0)
 
@@ -37,6 +36,14 @@ def decode_list(lst):
 def encode_values(d):
     '''Given a dict d, returns a new dict with encoded keys and values.'''
     return dict([(encode_arg(k), encode_arg(v)) for k, v in d.iteritems()])
+
+
+def dump_data(data):
+    return base64.b64encode(json.dumps(data)) if data else ''
+
+
+def load_data(s):
+    return json.loads(base64.b64decode(s)) if s else {}
 
 
 def parse_query(query, defaults=None):
@@ -84,9 +91,3 @@ def format_duration(s):
     m, s = divmod(s, 60)
     h, m = divmod(m, 60)
     return '%s%d:%02d:%02d' % (sign, h, m, s)
-
-
-def parse_id(comment):
-    m = ITEM_PATTERN.match(comment)
-    if m is not None:
-        return int(m.group('id'))
