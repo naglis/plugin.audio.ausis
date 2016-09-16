@@ -119,11 +119,10 @@ INSERT INTO audiofiles (
     :size
 );'''
     cr.executemany(query, items)
-
     return audiobook_id
 
 
-def audiobook_exists(cr, subdir):
+def audiobook_exists(cr, path):
     query = '''
 SELECT
     *
@@ -133,7 +132,7 @@ WHERE
     path = :path
 LIMIT
     1;'''
-    cr.execute(query, {'path': subdir})
+    cr.execute(query, locals())
     res = cr.fetchone()
     return bool(res)
 
