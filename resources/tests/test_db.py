@@ -18,8 +18,12 @@ TEST_FILES = [
     ['Lapkritis', '01 Viktutė.mp3', TEST_DURATION_1, TEST_SIZE_1],
 ]
 TEST_NARRATOR = 'Dovilė Riškuvienė'
-COVER_PATH = 'cover.jpg'
-FANART_PATH = 'fanart.png'
+TEST_COVER_PATH = 'cover.jpg'
+TEST_FANART_PATH = 'fanart.png'
+TEST_AUDIOBOOK = [
+    TEST_AUTHOR, TEST_TITLE, TEST_PATH, TEST_FILES, TEST_NARRATOR,
+    TEST_COVER_PATH, TEST_FANART_PATH,
+]
 
 
 class TestDatabase(unittest.TestCase):
@@ -44,10 +48,13 @@ class TestDatabase(unittest.TestCase):
     def test_add_audiobook(self):
         with self.conn as conn:
             cr = conn.cursor()
-            db.add_audiobook(
-                cr, TEST_AUTHOR, TEST_TITLE, TEST_PATH, TEST_FILES,
-                TEST_NARRATOR, COVER_PATH, FANART_PATH
-            )
+            db.add_audiobook(cr, *TEST_AUDIOBOOK)
             cr.execute('SELECT COUNT(1) FROM audiobooks;')
             result = cr.fetchone()
             self.assertEqual(result[0], 1)
+
+    def test_audiobook_exists(self):
+        with self.conn as conn:
+            cr = conn.cursor()
+            db.add_audiobook(cr, *TEST_AUDIOBOOK)
+            self.assertTrue(db.audiobook_exists(cr, TEST_PATH))
