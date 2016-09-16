@@ -62,3 +62,31 @@ class TestDatabase(unittest.TestCase):
                 db.audiobook_exists(cr, 'NON_EXISTING_PATH'),
                 msg='Audiobook at non-existing path was found',
             )
+
+    def test_get_cover(self):
+        with self.conn as conn:
+            cr = conn.cursor()
+            audiobook_id = db.add_audiobook(cr, *TEST_AUDIOBOOK)
+            self.assertEqual(db.get_cover(cr, audiobook_id), TEST_COVER_PATH)
+
+    def test_set_cover(self):
+        with self.conn as conn:
+            cr = conn.cursor()
+            new_cover_path = 'folder.jpg'
+            audiobook_id = db.add_audiobook(cr, *TEST_AUDIOBOOK)
+            db.set_cover(cr, audiobook_id, new_cover_path)
+            self.assertEqual(db.get_cover(cr, audiobook_id), new_cover_path)
+
+    def test_get_fanart(self):
+        with self.conn as conn:
+            cr = conn.cursor()
+            audiobook_id = db.add_audiobook(cr, *TEST_AUDIOBOOK)
+            self.assertEqual(db.get_fanart(cr, audiobook_id), TEST_FANART_PATH)
+
+    def test_set_fanart(self):
+        with self.conn as conn:
+            cr = conn.cursor()
+            new_fanart_path = 'fan_art.jpg'
+            audiobook_id = db.add_audiobook(cr, *TEST_AUDIOBOOK)
+            db.set_fanart(cr, audiobook_id, new_fanart_path)
+            self.assertEqual(db.get_fanart(cr, audiobook_id), new_fanart_path)
