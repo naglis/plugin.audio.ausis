@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import contextlib
-
 import xbmc as kodi
 
-from resources.lib import common, db, utils
+from resources.lib import common, db as database
 
-DB_PATH = common.get_db_path(db.DB_FILE_NAME)
+DB_PATH = common.get_db_path(database.DB_FILE_NAME)
 
 
 class AudioBookPlayer(kodi.Player):
@@ -34,11 +32,8 @@ class AudioBookPlayer(kodi.Player):
             if not audiofile_id:
                 return
             position = offset + position
-            database = db.AudioBookDB(DB_PATH)
-            with contextlib.closing(database.get_conn()) as conn, conn as conn:
-                cr = conn.cursor()
-                bookmark_id = db.add_bookmark(
-                    cr, audiofile_id, position)
+            with database.AusisDatabase(DB_PATH) as db:
+                bookmark_id = db.add_bookmark(audiofile_id, position)
                 if bookmark_id:
                     kodi.log('Added bookmark: %d at: %s' % (
                         bookmark_id, position))
