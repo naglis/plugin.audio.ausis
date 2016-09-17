@@ -27,6 +27,21 @@ TEST_AUDIOBOOK = [
 ]
 
 
+def table_exists(cr, table):
+    '''Checks if :param:`table` exists in the sqlite database.'''
+    cr.execute('''
+    SELECT
+        COUNT(1)
+    FROM
+        sqlite_master
+    WHERE
+        type = 'table'
+    AND
+        name = :table
+    ;''', locals())
+    return bool(utils.first_of(cr.fetchone()))
+
+
 class DummyDatabase(database.Database):
     SCHEMA = 'CREATE TABLE IF NOT EXISTS test (value varchar);'
 
@@ -46,17 +61,7 @@ class TestDatabase(unittest.TestCase):
         db = DummyDatabase(':memory:')
         db._connect()
         db.initialize()
-        db.cr.execute('''
-            SELECT
-                COUNT(1)
-            FROM
-                sqlite_master
-            WHERE
-                type='table'
-            AND
-                name='test'
-        ;''')
-        self.assertEqual(utils.first_of(db.cr.fetchone()), 1)
+        self.assertTrue(table_exists(db.cr, 'test'))
 
     def test_exception_inside_with_statement_rollbacks_changes(self):
         with tempfile.NamedTemporaryFile() as tmp:
@@ -81,10 +86,10 @@ class TestAusisDatabase(unittest.TestCase):
     def test_tables_are_created(self):
         with self.db as db:
             for table in ('audiobooks', 'audiofiles', 'bookmarks'):
-                try:
-                    db.cr.execute('SELECT * FROM %s;' % table)
-                except sqlite3.OperationalError:
-                    self.fail('Table: %s was not created' % table)
+                self.assertTrue(
+                    table_exists(db.cr, table),
+                    msg='Table: %s was not created' % table,
+                )
 
     def test_add_audiobook(self):
         with self.db as db:
