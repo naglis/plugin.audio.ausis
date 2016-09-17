@@ -19,6 +19,7 @@ class TestUtils(unittest.TestCase):
             (3661, '1:01:01'),
             (-1, '-0:00:01'),
             (-61, '-0:01:01'),
+            (-0.00001, '0:00:00'),
         ]
         for s, expected in test_cases:
             actual = utils.format_duration(s)

@@ -86,6 +86,7 @@ def ignore_matcher(fn):
 
 
 def format_duration(s):
+    s = int(s)
     sign = '-' if s < 0 else ''
     s = abs(s)
     m, s = divmod(s, 60)
