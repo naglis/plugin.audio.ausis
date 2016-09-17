@@ -104,18 +104,21 @@ class MigratableDatabase(Database):
             database_version INTEGER NOT NULL
         );''')
         # Write current database version.
-        self.cr.execute('''
-        INSERT OR REPLACE INTO versions (
-            id, database_version
-        ) VALUES (
-            1, :version
-        );''', {'version': self.VERSION})
+        self.set_version(self.VERSION)
         # Run migrations.
         self.migrate()
 
     def get_version(self):
         self.cr.execute('SELECT database_version FROM versions WHERE id = 1;')
         return utils.first_of(self.cr.fetchone())
+
+    def set_version(self, version):
+        self.cr.execute('''
+        INSERT OR REPLACE INTO versions (
+            id, database_version
+        ) VALUES (
+            1, :version
+        );''', locals())
 
     def migrate(self):
         for version, migration_func in self.MIGRATIONS:
@@ -125,6 +128,8 @@ class MigratableDatabase(Database):
                     migration_func(self.cr)
                 except Exception as e:
                     raise DatabaseMigrationError(e)
+                else:
+                    self.set_version(version)
 
 
 class AusisDatabase(MigratableDatabase):
