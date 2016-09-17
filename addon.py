@@ -258,8 +258,7 @@ class Ausis(common.KodiPlugin):
                     if authors:
                         author = authors.pop()
                     else:
-                        self.log('Unknown artist: %s' % u_subdir)
-                        continue
+                        author = self._t(30014)
 
                     audiobook_id = self.db.add_audiobook(
                         author, title, u_subdir, items)

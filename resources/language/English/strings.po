@@ -65,3 +65,7 @@ msgstr ""
 msgctxt "#30013"
 msgid "Resume %s (%s)"
 msgstr ""
+
+msgctxt "#30014"
+msgid "Unknown author"
+msgstr ""

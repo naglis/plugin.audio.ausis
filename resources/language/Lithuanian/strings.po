@@ -65,3 +65,7 @@ msgstr "Ne"
 msgctxt "#30013"
 msgid "Resume %s (%s)"
 msgstr "Tęsti %s (%s)"
+
+msgctxt "#30014"
+msgid "Unknown author"
+msgstr "Nežinomas autorius"
