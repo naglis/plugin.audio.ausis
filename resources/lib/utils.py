@@ -29,10 +29,6 @@ def encode_arg(arg):
     return arg
 
 
-def decode_list(lst):
-    return [decode_arg(item) for item in lst]
-
-
 def encode_values(d):
     '''Given a dict d, returns a new dict with encoded keys and values.'''
     return dict([(encode_arg(k), encode_arg(v)) for k, v in d.iteritems()])
@@ -56,7 +52,7 @@ def parse_query(query, defaults=None):
         if len(values) == 1:
             d[decode_arg(key)] = decode_arg(first_of(values))
         else:
-            d[decode_arg(key)] = decode_list(values)
+            d[decode_arg(key)] = map(decode_arg, values)
     return d
 
 
