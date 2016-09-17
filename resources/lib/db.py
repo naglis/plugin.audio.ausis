@@ -126,7 +126,7 @@ class MigratableDatabase(Database):
 
 class AusisDatabase(MigratableDatabase):
 
-    VERSION = 1
+    VERSION = 0
     SCHEMA = AUSIS_SCHEMA
     MIGRATIONS = tuple()
 
