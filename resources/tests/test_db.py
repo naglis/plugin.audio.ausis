@@ -2,7 +2,6 @@
 from __future__ import unicode_literals
 
 import os
-import sqlite3
 import sys
 import tempfile
 import unittest
@@ -55,6 +54,29 @@ class DummyDatabase(database.Database):
         return bool(utils.first_of(self.cr.fetchone()))
 
 
+class DummyMigratableDatabase(database.MigratableDatabase):
+
+    def migrate_0_to_1(cr):
+        cr.execute('CREATE TABLE test2 (value INTEGER);')
+
+    SCHEMA = 'CREATE TABLE IF NOT EXISTS test (value varchar);'
+    VERSION = 0
+    MIGRATIONS = (
+        (1, migrate_0_to_1),
+    )
+
+
+class DummyFaultyMigratableDatabase(DummyMigratableDatabase):
+
+    def migrate_0_to_1(cr):
+        '''Table 'test' already exists, so migration should fail.'''
+        cr.execute('CREATE TABLE test (value INTEGER);')
+
+    MIGRATIONS = (
+        (1, migrate_0_to_1),
+    )
+
+
 class TestDatabase(unittest.TestCase):
 
     def test_initialize_initializes_schema(self):
@@ -75,6 +97,25 @@ class TestDatabase(unittest.TestCase):
 
             with dummy_db as db:
                 self.assertFalse(db.has_value('Hello'))
+
+
+class TestMigratableDatabase(unittest.TestCase):
+
+    def test_initialize_executes_migrations(self):
+        with DummyMigratableDatabase(':memory:') as db:
+            self.assertTrue(
+                table_exists(db.cr, 'test2'),
+                msg='Table test2 was not created during migration',
+            )
+
+    def test_migration_increases_version_number(self):
+        with DummyMigratableDatabase(':memory:') as db:
+            self.assertEqual(db.get_version(), 1, msg='Wrong database version')
+
+    def test_failed_migration_raises_DatabaseMigrationError(self):
+        with self.assertRaises(database.DatabaseMigrationError):
+            with DummyFaultyMigratableDatabase(':memory:'):
+                pass
 
 
 class TestAusisDatabase(unittest.TestCase):
