@@ -97,17 +97,20 @@ class MigratableDatabase(Database):
         super(MigratableDatabase, self).initialize()
         if self.VERSION is None:
             raise ValueError('Database VERSION must be set')
+        # Create a separate table to store database version.
         self.cr.execute('''
         CREATE TABLE IF NOT EXISTS versions (
             id INTEGER PRIMARY KEY,
             database_version INTEGER NOT NULL
         );''')
+        # Write current database version.
         self.cr.execute('''
         INSERT OR REPLACE INTO versions (
             id, database_version
         ) VALUES (
             1, :version
         );''', {'version': self.VERSION})
+        # Run migrations.
         self.migrate()
 
     def get_version(self):
