@@ -87,3 +87,35 @@ class KodiPlugin(object):
                 'Plugin called with unknown mode: %s' % mode,
                 level=kodi.LOGERROR,
             )
+
+def prepare_audiofile_listitem(audiobook_dir, audiobook, item, data=None):
+    data = {} if data is None else data
+    d = {
+        'item': item[b'id'],
+    }
+    d.update(data)
+    audiobook_path = audiobook[b'path']
+    cover = audiobook[b'cover_path']
+    if cover:
+        cover = os.path.join(audiobook_dir, audiobook_path, cover)
+    fanart = audiobook[b'fanart_path']
+    if fanart:
+        fanart = os.path.join(audiobook_dir, audiobook_path, fanart)
+    li = kodigui.ListItem(item[b'title'])
+    li.setInfo('music', {
+        'tracknumber': item[b'sequence'],
+        'duration': int(item[b'duration']),
+        'album': audiobook[b'title'],
+        'artist': audiobook[b'author'],
+        'title': item[b'title'],
+        'genre': 'Audiobook',
+        'comment': common.dump_comment(d),
+        'size': item[b'size'],
+        'count': item[b'sequence'],
+    })
+    li.setArt({
+        'thumb': cover,
+        'icon': cover,
+        'fanart': fanart,
+    })
+    return li

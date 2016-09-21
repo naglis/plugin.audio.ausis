@@ -22,40 +22,6 @@ class Ausis(common.KodiPlugin):
     def db(self):
         return self._db
 
-    def _prepare_audiofile_listitem(self, audiobook_dir, audiobook, item,
-                                    data=None):
-        data = {} if data is None else data
-        d = {
-            'item': item[b'id'],
-        }
-        d.update(data)
-        audiobook_path = audiobook[b'path']
-        cover = audiobook[b'cover_path']
-        if cover:
-            cover = os.path.join(audiobook_dir, audiobook_path, cover)
-        fanart = audiobook[b'fanart_path']
-        if fanart:
-            fanart = os.path.join(audiobook_dir, audiobook_path, fanart)
-        li = kodigui.ListItem(item[b'title'])
-        li.setInfo('music', {
-            'tracknumber': item[b'sequence'],
-            'duration': int(item[b'duration']),
-            'album': audiobook[b'title'],
-            'artist': audiobook[b'author'],
-            'title': item[b'title'],
-            'genre': 'Audiobook',
-            'comment': common.dump_comment(d),
-            'playcount': 0,
-            'size': item[b'size'],
-            'count': item[b'sequence'],
-        })
-        li.setArt({
-            'thumb': cover,
-            'icon': cover,
-            'fanart': fanart,
-        })
-        return li
-
     def mode_main(self, args):
         directory = utils.decode_arg(
             self._addon.getSetting('audiobook_directory'))
@@ -153,7 +119,7 @@ class Ausis(common.KodiPlugin):
                 )
             for item in items:
                 url = self._build_url(mode='play', audiofile_id=item[b'id'])
-                li = self._prepare_audiofile_listitem(
+                li = common.prepare_audiofile_listitem(
                     audiobook_dir, audiobook, item)
                 kodiplugin.addDirectoryItem(
                     handle=self._handle,
@@ -176,7 +142,7 @@ class Ausis(common.KodiPlugin):
             playlist = kodi.PlayList(kodi.PLAYLIST_MUSIC)
             playlist.clear()
             for item in items:
-                li = self._prepare_audiofile_listitem(
+                li = common.prepare_audiofile_listitem(
                     audiobook_dir, audiobook, item)
                 url = os.path.join(
                     audiobook_dir, audiobook_path, item[b'file_path'])
@@ -200,7 +166,7 @@ class Ausis(common.KodiPlugin):
             playlist.clear()
             for item in items:
                 offset = bookmark[b'position']
-                li = self._prepare_audiofile_listitem(
+                li = common.prepare_audiofile_listitem(
                     audiobook_dir, audiobook, item, data={'offset': offset})
                 li.setProperty('StartOffset', '{0:.2f}'.format(offset))
                 url = os.path.join(
