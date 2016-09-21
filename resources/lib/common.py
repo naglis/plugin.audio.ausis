@@ -7,6 +7,7 @@ import os
 import urllib
 
 import xbmc as kodi
+import xbmcgui as kodigui
 import xbmcplugin as kodiplugin
 
 import utils
@@ -88,6 +89,7 @@ class KodiPlugin(object):
                 level=kodi.LOGERROR,
             )
 
+
 def prepare_audiofile_listitem(audiobook_dir, audiobook, item, data=None):
     data = {} if data is None else data
     d = {
@@ -109,7 +111,7 @@ def prepare_audiofile_listitem(audiobook_dir, audiobook, item, data=None):
         'artist': audiobook[b'author'],
         'title': item[b'title'],
         'genre': 'Audiobook',
-        'comment': common.dump_comment(d),
+        'comment': dump_comment(d),
         'size': item[b'size'],
         'count': item[b'sequence'],
     })
