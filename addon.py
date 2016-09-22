@@ -165,13 +165,11 @@ class Ausis(common.KodiPlugin):
             playlist = kodi.PlayList(kodi.PLAYLIST_MUSIC)
             playlist.clear()
             for idx, item in enumerate(items):
-                data = {}
-                if not idx:
-                    offset = bookmark[b'position']
-                    li.setProperty('StartOffset', '{0:.2f}'.format(offset))
-                    data = {'offset': offset}
+                offset = 0.0 if idx > 0 else bookmark[b'position']
                 li = common.prepare_audiofile_listitem(
-                    audiobook_dir, audiobook, item, data=data)
+                    audiobook_dir, audiobook, item, data={'offset': offset})
+                if offset:
+                    li.setProperty('StartOffset', '{0:.2f}'.format(offset))
                 url = os.path.join(
                     audiobook_dir, audiobook_path, item[b'file_path'])
                 playlist.add(url, li)
