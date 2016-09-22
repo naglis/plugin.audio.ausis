@@ -164,18 +164,19 @@ class Ausis(common.KodiPlugin):
             audiobook_path = audiobook[b'path']
             playlist = kodi.PlayList(kodi.PLAYLIST_MUSIC)
             playlist.clear()
-            for item in items:
-                offset = bookmark[b'position']
+            for idx, item in enumerate(items):
+                data = {}
+                if not idx:
+                    offset = bookmark[b'position']
+                    li.setProperty('StartOffset', '{0:.2f}'.format(offset))
+                    data = {'offset': offset}
                 li = common.prepare_audiofile_listitem(
-                    audiobook_dir, audiobook, item, data={'offset': offset})
-                li.setProperty('StartOffset', '{0:.2f}'.format(offset))
+                    audiobook_dir, audiobook, item, data=data)
                 url = os.path.join(
                     audiobook_dir, audiobook_path, item[b'file_path'])
                 playlist.add(url, li)
             player = kodi.Player()
             player.play(playlist)
-            # kodi.sleep(500)
-            # player.seekTime(bookmark[b'position'])
         else:
             self.log('No bookmark ID provided!', level=kodi.LOGERROR)
 
