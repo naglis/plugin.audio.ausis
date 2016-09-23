@@ -47,8 +47,8 @@ msgid "ausis"
 msgstr "ausis"
 
 msgctxt "#30009"
-msgid "The audiobook directory is configured, but there are no audiobooks in the database yet."
-msgstr "Audioknygų aplankas nurodytas, bet duomenų bazėje dar nėra įrašų apie audioknygas."
+msgid "The audiobook directory is configured, but there are no audiobooks in the library yet."
+msgstr "Audioknygų aplankas nurodytas, tačiau bibliotekoje dar nėra audioknygų."
 
 msgctxt "#30010"
 msgid "Would you like to scan the audiobook directory now?"

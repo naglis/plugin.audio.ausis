@@ -47,7 +47,7 @@ msgid "ausis"
 msgstr ""
 
 msgctxt "#30009"
-msgid "The audiobook directory is configured, but there are no audiobooks in the database yet."
+msgid "The audiobook directory is configured, but there are no audiobooks in the library yet."
 msgstr ""
 
 msgctxt "#30010"
