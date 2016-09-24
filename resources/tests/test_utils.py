@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import datetime
 import os
 import sys
 import unittest
@@ -72,3 +73,31 @@ class TestUtils(unittest.TestCase):
             actual = utils.fanart_matcher(fn)
             self.assertEqual(
                 actual, expected, 'Matching fanart: %s incorrectly' % fn)
+
+    def test_latest_bookmark(self):
+        bookmarks = [
+            {b'id': 1, b'date_added': datetime.datetime(2010, 1, 1, 12, 00)},
+            {b'id': 2, b'date_added': datetime.datetime(2010, 11, 22, 21, 45)},
+            {b'id': 3, b'date_added': datetime.datetime(2010, 4, 7, 11, 00)},
+        ]
+        latest = utils.latest_bookmark(bookmarks)
+        self.assertEqual(latest[b'id'], 2)
+
+    def test_furthest_bookmark(self):
+        bookmarks = [
+            {b'id': 10, b'sequence': 1, b'position': 123},
+            {b'id': 8, b'sequence': 2, b'position': 100},
+            {b'id': 7, b'sequence': 1, b'position': 124},
+        ]
+        furthest = utils.furthest_bookmark(bookmarks)
+        self.assertEqual(furthest[b'id'], 8)
+
+    def test_parse_query_single_value(self):
+        query = 'a=1&b=3&c=2&d='
+        args = utils.parse_query(query)
+        self.assertEqual(args, {'a': '1', 'b': '3', 'c': '2'})
+
+    def test_parse_query_multiple_values(self):
+        query = 'a=1&b=3&c=2&b=4'
+        args = utils.parse_query(query)
+        self.assertEqual(args, {'a': '1', 'b': ['3', '4'], 'c': '2'})
