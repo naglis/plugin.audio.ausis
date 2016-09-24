@@ -88,3 +88,19 @@ def format_duration(s):
     m, s = divmod(s, 60)
     h, m = divmod(m, 60)
     return '%s%d:%02d:%02d' % (sign, h, m, s)
+
+
+def latest_bookmark(bookmarks):
+    return first_of(
+        sorted(bookmarks, key=operator.itemgetter(b'date_added'), reverse=True)
+    )
+
+
+def furthest_bookmark(bookmarks):
+    return first_of(
+        sorted(
+            bookmarks,
+            key=operator.itemgetter(b'sequence', b'position'),
+            reverse=True,
+        )
+    )

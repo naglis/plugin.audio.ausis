@@ -22,6 +22,17 @@ class Ausis(common.KodiPlugin):
     def db(self):
         return self._db
 
+    def _prepare_bookmark_listitem(self, string_id, bookmark):
+        url = self._build_url(
+            mode='resume', bookmark_id=bookmark[b'id'])
+        position = utils.format_duration(bookmark[b'position'])
+        li = kodigui.ListItem(
+            common.italic(
+                self._t(string_id) % (bookmark[b'title'], position)
+            )
+        )
+        return dict(handle=self._handle, url=url, listitem=li, isFolder=False)
+
     def mode_main(self, args):
         directory = utils.decode_arg(
             self._addon.getSetting('audiobook_directory'))
@@ -101,22 +112,18 @@ class Ausis(common.KodiPlugin):
                 fanart = os.path.join(
                     audiobook_dir, audiobook[b'path'], fanart)
 
-            bookmark = self.db.get_audiobook_last_bookmark(audiobook_id)
-            if bookmark:
-                url = self._build_url(
-                    mode='resume', bookmark_id=bookmark[b'id'])
-                position = utils.format_duration(bookmark[b'position'])
-                li = kodigui.ListItem(
-                    common.italic(
-                        self._t(30013) % (bookmark[b'title'], position)
-                    )
-                )
+            bookmarks = self.db.get_audiobook_bookmarks(audiobook_id)
+            if bookmarks:
+                latest = utils.latest_bookmark(bookmarks)
+                furthest = utils.furthest_bookmark(bookmarks)
                 kodiplugin.addDirectoryItem(
-                    handle=self._handle,
-                    url=url,
-                    listitem=li,
-                    isFolder=False,
+                    **self._prepare_bookmark_listitem(30013, latest)
                 )
+                if not latest == furthest:
+                    kodiplugin.addDirectoryItem(
+                        **self._prepare_bookmark_listitem(30015, furthest)
+                    )
+
             for item in items:
                 url = self._build_url(mode='play', audiofile_id=item[b'id'])
                 li = common.prepare_audiofile_listitem(
