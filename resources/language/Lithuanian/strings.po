@@ -63,9 +63,13 @@ msgid "No"
 msgstr "Ne"
 
 msgctxt "#30013"
-msgid "Resume %s (%s)"
-msgstr "Tęsti %s (%s)"
+msgid "Resume latest: %s (%s)"
+msgstr "Tęsti paskiausią: %s (%s)"
 
 msgctxt "#30014"
 msgid "Unknown author"
 msgstr "Nežinomas autorius"
+
+msgctxt "#30015"
+msgid "Resume furthest: %s (%s)"
+msgstr "Tęsti tolimiausią: %s (%s)"
