@@ -188,3 +188,23 @@ class TestAusisDatabase(unittest.TestCase):
             audiobook_id = db.add_audiobook(*TEST_AUDIOBOOK)
             db.set_fanart(audiobook_id, new_fanart_path)
             self.assertEqual(db.get_fanart(audiobook_id), new_fanart_path)
+
+    def test_add_bookmark(self):
+        with self.db as db:
+            audiobook_id = db.add_audiobook(*TEST_AUDIOBOOK)
+            _, items = db.get_audiobook(audiobook_id)
+            position = 123
+            item_id = items[0][b'id']
+            bookmark_id = db.add_bookmark(item_id, position)
+            db.cr.execute('''
+            SELECT
+                audiofile_id,
+                position
+            FROM
+                bookmarks
+            WHERE
+                id = :bookmark_id
+            ;''', locals())
+            actual_item_id, actual_position = db.cr.fetchone()
+            self.assertEqual(actual_item_id, item_id)
+            self.assertEqual(actual_position, position)

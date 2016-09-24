@@ -275,18 +275,6 @@ class AusisDatabase(MigratableDatabase):
 
     def add_bookmark(self, audiofile_id, position):
         query = '''
-        SELECT
-            audiobook_id
-        FROM
-            audiofiles
-        WHERE id = :audiofile_id
-        ;'''
-        self.cr.execute(query, locals())
-        result = self.cr.fetchone()
-        if not result:
-            return False
-        audiobook_id, = result
-        query = '''
         INSERT INTO bookmarks (
             audiofile_id,
             audiobook_id,
@@ -294,13 +282,18 @@ class AusisDatabase(MigratableDatabase):
             date_added
         ) VALUES (
             :audiofile_id,
-            :audiobook_id,
+            (SELECT
+                audiobook_id
+            FROM
+                audiofiles
+            WHERE
+                id = :audiofile_id
+            ),
             :position,
             DATETIME('now')
         );'''
         self.cr.execute(query, locals())
-        bookmark_id = self.cr.lastrowid
-        return bookmark_id
+        return self.cr.lastrowid
 
     def get_bookmark(self, bookmark_id):
         query = '''
