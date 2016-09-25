@@ -37,6 +37,10 @@ def get_tags(file_path):
         artist = id3_getter('TPE1', tags)
         album = id3_getter('TALB', tags)
         title = id3_getter('TIT2', tags)
+    elif ftype == mutagen.mp4.MP4Info:
+        artist = single_item(tags.get(b'\xa9ART'))
+        album = single_item(tags.get(b'\xa9alb'))
+        title = single_item(tags.get(b'\xa9nam'))
     else:
         raise ValueError('Unknown file type')
     return Tags(
