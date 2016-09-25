@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS bookmarks (
     FOREIGN KEY(audiofile_id) REFERENCES audiofiles (id) ON DELETE CASCADE,
     FOREIGN KEY(audiobook_id) REFERENCES audiobooks (id) ON DELETE CASCADE
 );
+CREATE INDEX IF NOT EXISTS audiobook_path_idx ON audiobooks (path);
 '''
 
 
