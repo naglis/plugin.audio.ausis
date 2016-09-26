@@ -208,3 +208,50 @@ class TestAusisDatabase(unittest.TestCase):
             actual_item_id, actual_position = db.cr.fetchone()
             self.assertEqual(actual_item_id, item_id)
             self.assertEqual(actual_position, TEST_BOOKMARK_POSITION)
+
+    def test_remove_audiobook_removes_audiobook(self):
+        with self.db as db:
+            audiobook_id = db.add_audiobook(*TEST_AUDIOBOOK)
+            result = db.remove_audiobook(audiobook_id)
+            self.assertTrue(result)
+            db.cr.execute('''
+            SELECT
+                id
+            FROM
+                audiobooks
+            WHERE
+                id = :audiobook_id
+            ;''', locals())
+            self.assertFalse(db.cr.fetchall())
+
+    def test_remove_audiobook_removes_its_audiofiles(self):
+        with self.db as db:
+            audiobook_id = db.add_audiobook(*TEST_AUDIOBOOK)
+            db.remove_audiobook(audiobook_id)
+            db.cr.execute('''
+            SELECT
+                id
+            FROM
+                audiofiles
+            WHERE
+                audiobook_id = :audiobook_id
+            ;''', locals())
+            self.assertFalse(db.cr.fetchall())
+
+    def test_remove_audiobook_removes_its_bookmarks(self):
+        with self.db as db:
+            audiobook_id = db.add_audiobook(*TEST_AUDIOBOOK)
+            _, items = db.get_audiobook(audiobook_id)
+            item_id = utils.first_of(items)[b'id']
+            bookmark_id = db.add_bookmark(item_id, TEST_BOOKMARK_POSITION)
+            self.assertTrue(bookmark_id)
+            db.remove_audiobook(audiobook_id)
+            db.cr.execute('''
+            SELECT
+                id
+            FROM
+                bookmarks
+            WHERE
+                audiobook_id = :audiobook_id
+            ;''', locals())
+            self.assertFalse(db.cr.fetchall())
