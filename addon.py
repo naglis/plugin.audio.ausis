@@ -57,6 +57,7 @@ class Ausis(common.KodiPlugin):
             kodiplugin.addSortMethod(self._handle, sort_method)
 
         for audiobook in audiobooks:
+            audiobook_id = audiobook[b'id']
             cover = audiobook[b'cover_path']
             if cover:
                 cover = os.path.join(
@@ -66,7 +67,7 @@ class Ausis(common.KodiPlugin):
                 fanart = os.path.join(
                     directory, audiobook[b'path'], fanart)
             url = self._build_url(
-                mode='audiobook', audiobook_id=audiobook[b'id'])
+                mode='audiobook', audiobook_id=audiobook_id)
             li = kodigui.ListItem(audiobook[b'title'], iconImage=cover)
             info_labels = {
                 'duration': int(audiobook[b'duration']),
@@ -86,6 +87,10 @@ class Ausis(common.KodiPlugin):
                 })
             if fanart:
                 li.setProperty('Fanart_Image', fanart)
+            li.addContextMenuItems([
+                (self._t(30018), 'RunPlugin(%s)' % self._build_url(
+                    mode='remove', audiobook_id=audiobook_id)),
+            ])
             kodiplugin.addDirectoryItem(
                 handle=self._handle,
                 url=url,
@@ -184,6 +189,23 @@ class Ausis(common.KodiPlugin):
             player.play(playlist)
         else:
             self.log('No bookmark ID provided!', level=kodi.LOGERROR)
+
+    def mode_remove(self, args):
+        audiobook_id = args.get('audiobook_id')
+        if audiobook_id:
+            audiobook, _ = self.db.get_audiobook(audiobook_id)
+            dialog = kodigui.Dialog()
+            confirmed = dialog.yesno(
+                self._t(30008),
+                line1=self._t(30016) % audiobook[b'title'],
+                line2=self._t(30017), yeslabel=self._t(30011),
+                nolabel=self._t(30012)
+            )
+            if confirmed:
+                self.db.remove_audiobook(audiobook_id)
+                kodi.executebuiltin('Container.Refresh()')
+        else:
+            self.log('No audiobook ID provided!', level=kodi.LOGERROR)
 
     def mode_scan(self, args):
         directory = self._addon.getSetting('audiobook_directory')
