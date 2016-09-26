@@ -195,6 +195,16 @@ class AusisDatabase(MigratableDatabase):
         self.cr.executemany(query, items)
         return audiobook_id
 
+    def remove_audiobook(self, audiobook_id):
+        query = '''
+        DELETE FROM
+            audiobooks
+        WHERE
+            id = :audiobook_id
+        ;'''
+        self.cr.execute(query, locals())
+        return self.cr.connection.total_changes >= 1
+
     def get_all_audiobooks(self):
         query = '''
         SELECT
