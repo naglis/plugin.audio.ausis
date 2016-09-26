@@ -73,7 +73,7 @@ class Database(object):
         self._conn = sqlite3.connect(
             self._db_path, detect_types=sqlite3.PARSE_DECLTYPES)
         self._conn.row_factory = sqlite3.Row
-        self._conn.execute('PRAGMA foreign_keys;')
+        self._conn.execute('PRAGMA foreign_keys = ON;')
         self._cr = self._conn.cursor()
 
     def __enter__(self):
