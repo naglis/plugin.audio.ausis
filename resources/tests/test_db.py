@@ -24,6 +24,7 @@ TEST_AUDIOBOOK = [
     TEST_AUTHOR, TEST_TITLE, TEST_PATH, TEST_FILES, TEST_NARRATOR,
     TEST_COVER_PATH, TEST_FANART_PATH,
 ]
+TEST_BOOKMARK_POSITION = 123
 
 
 def table_exists(cr, table):
@@ -193,9 +194,8 @@ class TestAusisDatabase(unittest.TestCase):
         with self.db as db:
             audiobook_id = db.add_audiobook(*TEST_AUDIOBOOK)
             _, items = db.get_audiobook(audiobook_id)
-            position = 123
             item_id = items[0][b'id']
-            bookmark_id = db.add_bookmark(item_id, position)
+            bookmark_id = db.add_bookmark(item_id, TEST_BOOKMARK_POSITION)
             db.cr.execute('''
             SELECT
                 audiofile_id,
@@ -207,4 +207,4 @@ class TestAusisDatabase(unittest.TestCase):
             ;''', locals())
             actual_item_id, actual_position = db.cr.fetchone()
             self.assertEqual(actual_item_id, item_id)
-            self.assertEqual(actual_position, position)
+            self.assertEqual(actual_position, TEST_BOOKMARK_POSITION)
