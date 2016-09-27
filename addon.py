@@ -282,11 +282,38 @@ class Ausis(common.KodiPlugin):
 
 def main():
     addon = kodiaddon.Addon(id='plugin.audio.ausis')
-    base_url, handle = sys.argv[0], int(sys.argv[1])
-    args = utils.parse_query(sys.argv[2][1:])
-    db_filename = common.get_db_path(database.DB_FILE_NAME)
-    with database.AusisDatabase(db_filename) as db:
-        Ausis(base_url, handle, addon, db).run(args)
+    try:
+        base_url, handle = sys.argv[0], int(sys.argv[1])
+        args = utils.parse_query(sys.argv[2][1:])
+        db_filename = common.get_db_path(database.DB_FILE_NAME)
+        with database.AusisDatabase(db_filename) as db:
+            Ausis(base_url, handle, addon, db).run(args)
+    except Exception:
+        send_report = (
+            addon.getSetting('send_crash_reports').lower() == 'true')
+        if not send_report:
+            raise
+
+        # Send the crash report / inform the user.
+        dialog = kodigui.Dialog()
+        dialog.notification(
+            addon.getLocalizedString(30020),
+            addon.getLocalizedString(30021),
+            icon=kodigui.NOTIFICATION_ERROR,
+            time=4000,
+            sound=True,
+        )
+        kodi.executebuiltin('ActivateWindow(Home)')
+        sent = common.send_crash_report(
+            release=addon.getAddonInfo('version'))
+        if sent:
+            dialog.notification(
+                addon.getLocalizedString(30022),
+                addon.getLocalizedString(30023),
+                icon=kodigui.NOTIFICATION_INFO,
+                time=2000,
+                sound=False,
+            )
 
 if __name__ == '__main__':
     main()

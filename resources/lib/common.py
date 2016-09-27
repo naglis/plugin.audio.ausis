@@ -32,6 +32,12 @@ AUDIOBOOK_SORT_METHODS = (
 )
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
+# I know, I know... This is just mild obfuscation.
+SENTRY_URL = (
+    '68747470733a2f2f653532396430633836653434343931336161323263376166633639336'
+    '23634313a3937636438383234393265663432393838366534313730376635633035636130'
+    '4073656e7472792e696f2f313031383937').decode('hex')
+
 
 def get_db_path(db_name):
     kodi_db_dir = kodi.translatePath('special://database')
@@ -121,3 +127,32 @@ def prepare_audiofile_listitem(audiobook_dir, audiobook, item, data=None):
         'fanart': fanart,
     })
     return li
+
+
+def send_crash_report(release=None, timeout=3):
+    # Importing Raven and setting up a client might take a while, depending
+    # on the performance of the system, and as Kodi plugins are run on each
+    # invocation, it is quicker to just initialize the Raven client only when
+    # an exception actually occurs.
+
+    # Also, we use the blocking :class:`raven.transport.http.HTTPTransport`,
+    # because Kodi has problems shutting down when using the default threaded
+    # :class:`raven.transport.threaded.ThreadedHTTPTransport`.
+    success = False
+    try:
+        import raven
+        client = raven.Client(
+            dsn='%s?timeout=%d' % (SENTRY_URL, timeout),
+            release=release,
+            install_sys_hook=False,
+            install_logging_hook=False,
+            transport=raven.transport.http.HTTPTransport,
+        )
+        client.captureException()
+    except ImportError:
+        kodi.log('Failed to import Raven', level=kodi.LOGERROR)
+    except Exception:
+        kodi.log('Failed to send error report to Sentry', level=kodi.LOGERROR)
+    else:
+        success = True
+    return success
