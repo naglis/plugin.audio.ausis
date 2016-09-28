@@ -99,27 +99,25 @@ class KodiPlugin(object):
 def prepare_audiofile_listitem(audiobook_dir, audiobook, item, data=None):
     data = {} if data is None else data
     d = {
-        'item': item[b'id'],
+        'item': item.id,
     }
     d.update(data)
-    audiobook_path = audiobook[b'path']
-    cover = audiobook[b'cover_path']
-    if cover:
-        cover = os.path.join(audiobook_dir, audiobook_path, cover)
-    fanart = audiobook[b'fanart_path']
-    if fanart:
-        fanart = os.path.join(audiobook_dir, audiobook_path, fanart)
-    li = kodigui.ListItem(item[b'title'])
+    cover, fanart = None, None
+    if audiobook.cover:
+        cover = os.path.join(audiobook_dir, audiobook.cover_path)
+    if audiobook.fanart:
+        fanart = os.path.join(audiobook_dir, audiobook.fanart_path)
+    li = kodigui.ListItem(item.title)
     li.setInfo('music', {
-        'tracknumber': item[b'sequence'],
-        'duration': int(item[b'duration']),
-        'album': audiobook[b'title'],
-        'artist': audiobook[b'author'],
-        'title': item[b'title'],
+        'tracknumber': item.sequence,
+        'duration': item.duration,
+        'album': audiobook.title,
+        'artist': audiobook.author,
+        'title': item.title,
         'genre': 'Audiobook',
         'comment': dump_comment(d),
-        'size': item[b'size'],
-        'count': item[b'sequence'],
+        'size': item.size,
+        'count': item.sequence,
     })
     li.setArt({
         'thumb': cover,

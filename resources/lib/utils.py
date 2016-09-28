@@ -92,7 +92,7 @@ def format_duration(s):
 
 def latest_bookmark(bookmarks):
     return first_of(
-        sorted(bookmarks, key=operator.itemgetter(b'date_added'), reverse=True)
+        sorted(bookmarks, key=operator.attrgetter('date_added'), reverse=True)
     )
 
 
@@ -100,7 +100,7 @@ def furthest_bookmark(bookmarks):
     return first_of(
         sorted(
             bookmarks,
-            key=operator.itemgetter(b'sequence', b'position'),
+            key=operator.attrgetter('audiofile.sequence', 'position'),
             reverse=True,
         )
     )
