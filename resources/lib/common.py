@@ -60,6 +60,8 @@ def dump_comment(data):
 
 class KodiPlugin(object):
 
+    _strings = {}
+
     def __init__(self, base_url, handle, addon):
         self._base_url = base_url
         self._handle = handle
@@ -73,6 +75,8 @@ class KodiPlugin(object):
 
     def _t(self, string_id):
         '''A shorthand to addon.getLocalizedString.'''
+        if isinstance(string_id, basestring):
+            string_id = self._strings[string_id]
         return self._addon.getLocalizedString(string_id)
 
     def log(self, msg, level=kodi.LOGDEBUG):

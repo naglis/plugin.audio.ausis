@@ -21,6 +21,27 @@ from resources.lib.db import (
 
 class Ausis(common.KodiPlugin):
 
+    _strings = {
+        'need_config': 30000,
+        'dir_not_set': 30001,
+        'scanning': 30007,
+        'ausis': 30008,
+        'library_empty_msg': 30009,
+        'scan_now?': 30010,
+        'yes': 30011,
+        'no': 30012,
+        'resume_latest': 30013,
+        'unknown_author': 30014,
+        'resume_furthest': 30015,
+        'remove_confirm_msg': 30016,
+        'are_you_sure': 30017,
+        'remove': 30018,
+        'error': 30020,
+        'sending_report': 30021,
+        'report_sent': 30022,
+        'report_sent_msg': 30023,
+    }
+
     def __init__(self, base_url, handle, addon):
         super(Ausis, self).__init__(base_url, handle, addon)
 
@@ -39,14 +60,14 @@ class Ausis(common.KodiPlugin):
             self._addon.getSetting('audiobook_directory'))
         audiobooks = Audiobook.select()
         if not directory and not audiobooks:
-            kodigui.Dialog().ok(self._t(30000), self._t(30001))
+            kodigui.Dialog().ok(self._t('need_config'), self._t('dir_not_set'))
             return
         elif directory and not audiobooks:
             dialog = kodigui.Dialog()
             scan_now = dialog.yesno(
-                self._t(30008), line1=self._t(30009),
-                line2=self._t(30010), yeslabel=self._t(30011),
-                nolabel=self._t(30012)
+                self._t('ausis'), line1=self._t('library_empty_msg'),
+                line2=self._t('scan_now?'), yeslabel=self._t('yes'),
+                nolabel=self._t('no')
             )
             if scan_now:
                 kodi.executebuiltin(
@@ -85,7 +106,7 @@ class Ausis(common.KodiPlugin):
                     os.path.join(directory, audiobook.fanart_path),
                 )
             li.addContextMenuItems([
-                (self._t(30018), 'RunPlugin(%s)' % self._build_url(
+                (self._t('remove'), 'RunPlugin(%s)' % self._build_url(
                     mode='remove', audiobook_id=audiobook.id)),
             ])
             kodiplugin.addDirectoryItem(
@@ -110,11 +131,12 @@ class Ausis(common.KodiPlugin):
                 latest = utils.latest_bookmark(bookmarks)
                 furthest = utils.furthest_bookmark(bookmarks)
                 kodiplugin.addDirectoryItem(
-                    **self._prepare_bookmark_listitem(30013, latest)
+                    **self._prepare_bookmark_listitem('resume_latest', latest)
                 )
                 if not latest == furthest:
                     kodiplugin.addDirectoryItem(
-                        **self._prepare_bookmark_listitem(30015, furthest)
+                        **self._prepare_bookmark_listitem(
+                            'resume_furthest', furthest)
                     )
 
             for item in audiobook.audiofiles:
@@ -181,10 +203,10 @@ class Ausis(common.KodiPlugin):
             audiobook = Audiobook.get(Audiobook.id == audiobook_id)
             dialog = kodigui.Dialog()
             confirmed = dialog.yesno(
-                self._t(30008),
-                line1=self._t(30016) % audiobook.title,
-                line2=self._t(30017), yeslabel=self._t(30011),
-                nolabel=self._t(30012)
+                self._t('ausis'),
+                line1=self._t('remove_confirm_msg') % audiobook.title,
+                line2=self._t('are_you_sure'), yeslabel=self._t('yes'),
+                nolabel=self._t('no')
             )
             if confirmed:
                 audiobook.delete_instance()
@@ -195,11 +217,11 @@ class Ausis(common.KodiPlugin):
     def mode_scan(self, args):
         directory = self._addon.getSetting('audiobook_directory')
         if not directory:
-            kodigui.Dialog().ok(self._t(30000), self._t(30001))
+            kodigui.Dialog().ok(self._t('need_config'), self._t('dir_not_set'))
             return
 
         dialog = kodigui.DialogProgressBG()
-        dialog.create('ausis', self._t(30007))
+        dialog.create('ausis', self._t('scanning'))
         try:
             for subdir, m in scan.scan(directory, progress_cb=dialog.update):
                 # Check if audiobook at this path is already in the database.
@@ -237,7 +259,7 @@ class Ausis(common.KodiPlugin):
                     if authors:
                         author = authors.pop()
                     else:
-                        author = self._t(30014)
+                        author = self._t('unknown_author')
 
                     audiobook = Audiobook.create(
                         author=author, title=title,
@@ -270,15 +292,16 @@ class Ausis(common.KodiPlugin):
 
 def main():
     addon = kodiaddon.Addon(id='plugin.audio.ausis')
+    base_url, handle = sys.argv[0], int(sys.argv[1])
+    ausis = Ausis(base_url, handle, addon)
     try:
-        base_url, handle = sys.argv[0], int(sys.argv[1])
         args = utils.parse_query(sys.argv[2][1:])
         db_filename = common.get_db_path(DB_FILE_NAME)
         database.init(db_filename)
         database.connect()
         database.create_tables([Audiobook, Audiofile, Bookmark], safe=True)
         with database.transaction():
-            Ausis(base_url, handle, addon).run(args)
+            ausis.run(args)
     except Exception:
         send_report = (
             addon.getSetting('send_crash_reports').lower() == 'true')
@@ -288,8 +311,8 @@ def main():
         # Send the crash report / inform the user.
         dialog = kodigui.Dialog()
         dialog.notification(
-            addon.getLocalizedString(30020),
-            addon.getLocalizedString(30021),
+            addon.getLocalizedString('error'),
+            addon.getLocalizedString('sending_report'),
             icon=kodigui.NOTIFICATION_ERROR,
             time=4000,
             sound=True,
@@ -299,8 +322,8 @@ def main():
             release=addon.getAddonInfo('version'))
         if sent:
             dialog.notification(
-                addon.getLocalizedString(30022),
-                addon.getLocalizedString(30023),
+                addon.getLocalizedString('report_sent'),
+                addon.getLocalizedString('report_sent_msg'),
                 icon=kodigui.NOTIFICATION_INFO,
                 time=2000,
                 sound=False,
