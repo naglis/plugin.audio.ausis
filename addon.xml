@@ -4,6 +4,7 @@
         <import addon="xbmc.python" version="2.20.0"/>
         <import addon="script.module.mutagen" version="1.22.0"/>
         <import addon="script.module.raven" version="5.27.1"/>
+        <import addon="script.module.peewee" version="2.8.3"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="addon.py">
         <provides>audio</provides>
