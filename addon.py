@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 import os
 import sys
 
+import peewee
 import xbmc as kodi
 import xbmcaddon as kodiaddon
 import xbmcgui as kodigui
@@ -58,11 +59,17 @@ class Ausis(common.KodiPlugin):
     def mode_main(self, args):
         directory = utils.decode_arg(
             self._addon.getSetting('audiobook_directory'))
+
         audiobooks = Audiobook.select()
-        if not directory and not audiobooks:
+        audiofiles = Audiofile.select()
+        audiobooks_with_files = peewee.prefetch(audiobooks, audiofiles)
+        total_books = len(audiobooks_with_files)
+        library_is_empty = not bool(total_books)
+
+        if not directory and library_is_empty:
             kodigui.Dialog().ok(self._t('need_config'), self._t('dir_not_set'))
             return
-        elif directory and not audiobooks:
+        elif directory and library_is_empty:
             dialog = kodigui.Dialog()
             scan_now = dialog.yesno(
                 self._t('ausis'), line1=self._t('library_empty_msg'),
@@ -78,7 +85,7 @@ class Ausis(common.KodiPlugin):
         for sort_method in common.AUDIOBOOK_SORT_METHODS:
             kodiplugin.addSortMethod(self._handle, sort_method)
 
-        for audiobook in audiobooks:
+        for audiobook in audiobooks_with_files:
             url = self._build_url(
                 mode='audiobook', audiobook_id=audiobook.id)
             li = kodigui.ListItem(
@@ -88,8 +95,9 @@ class Ausis(common.KodiPlugin):
                     if audiobook.cover else None
                 )
             )
+            duration = sum(i.duration for i in audiobook.audiofiles_prefetch)
             li.setInfo('music', {
-                'duration': audiobook.duration,
+                'duration': duration,
                 'artist': audiobook.author,
                 'album': audiobook.title,
                 'genre': 'Audiobook',
@@ -97,8 +105,8 @@ class Ausis(common.KodiPlugin):
             li.setInfo('video', {
                 'dateadded': audiobook.date_added.strftime(
                     common.DATETIME_FORMAT),
-                'lastplayed': audiobook.last_played.strftime(
-                    common.DATETIME_FORMAT),
+                # 'lastplayed': audiobook.last_played.strftime(
+                    # common.DATETIME_FORMAT),
             })
             if audiobook.fanart:
                 li.setProperty(
@@ -114,7 +122,7 @@ class Ausis(common.KodiPlugin):
                 url=url,
                 listitem=li,
                 isFolder=True,
-                totalItems=len(audiobooks),
+                totalItems=total_books,
             )
         kodiplugin.endOfDirectory(self._handle)
 
