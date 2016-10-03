@@ -66,9 +66,9 @@ class Audiobook(BaseModel):
     @property
     def last_played(self):
         bookmarks = (
-            Bookmark.select().join(Audiofile).where(
-                Audiofile.id == Bookmark.audiofile_id)
-        ).order_by(Bookmark.date_added.desc()).limit(1)
+            Bookmark.select().join(Audiofile).join(Audiobook).where(
+                Audiobook.id == self.id
+            )).order_by(Bookmark.date_added.desc()).limit(1)
         return utils.first_of(bookmarks).date_added if bookmarks else None
 
     @staticmethod
@@ -118,3 +118,7 @@ class Bookmark(BaseModel):
         null=False, default=datetime.datetime.now,
     )
     position = FloatField(null=False, default=0.0)
+
+
+if __name__ == '__main__':
+    a = ''

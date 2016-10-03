@@ -102,11 +102,12 @@ class Ausis(common.KodiPlugin):
                 'album': audiobook.title,
                 'genre': 'Audiobook',
             })
+            last_played = audiobook.last_played
             li.setInfo('video', {
                 'dateadded': audiobook.date_added.strftime(
                     common.DATETIME_FORMAT),
-                # 'lastplayed': audiobook.last_played.strftime(
-                    # common.DATETIME_FORMAT),
+                'lastplayed': last_played.strftime(
+                    common.DATETIME_FORMAT) if last_played else None,
             })
             if audiobook.fanart:
                 li.setProperty(
@@ -319,8 +320,8 @@ def main():
         # Send the crash report / inform the user.
         dialog = kodigui.Dialog()
         dialog.notification(
-            addon.getLocalizedString('error'),
-            addon.getLocalizedString('sending_report'),
+            ausis._t('error'),
+            ausis._t('sending_report'),
             icon=kodigui.NOTIFICATION_ERROR,
             time=4000,
             sound=True,
@@ -330,8 +331,8 @@ def main():
             release=addon.getAddonInfo('version'))
         if sent:
             dialog.notification(
-                addon.getLocalizedString('report_sent'),
-                addon.getLocalizedString('report_sent_msg'),
+                ausis._t('report_sent'),
+                ausis._t('report_sent_msg'),
                 icon=kodigui.NOTIFICATION_INFO,
                 time=2000,
                 sound=False,
