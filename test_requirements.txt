@@ -1,0 +1,2 @@
+mutagen==1.22.0
+coverage>=4.0,<5.0
