@@ -1,7 +1,15 @@
+=====
 ausis
 =====
 
 ausis is an audiobook support plugin for `Kodi`_.
+
+.. image:: https://gitlab.com/naglis/plugin.audio.ausis/badges/master/build.svg
+    :target: https://gitlab.com/naglis/plugin.audio.ausis/commits/master
+    :alt: Build status
+.. image:: https://gitlab.com/naglis/plugin.audio.ausis/badges/master/coverage.svg
+    :target: https://gitlab.com/naglis/plugin.audio.ausis/commits/master
+    :alt: Code coverage
 
 Credits
 -------
