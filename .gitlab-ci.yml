@@ -1,0 +1,7 @@
+before_script:
+    - pip install --requirement test_requirements.txt
+test:2.7:
+    image: python:2.7-alpine
+    script:
+        - coverage run -m unittest discover --start resources/
+        - coverage report
