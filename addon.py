@@ -4,31 +4,54 @@ from __future__ import unicode_literals
 import os
 import sys
 
+import peewee
 import xbmc as kodi
 import xbmcaddon as kodiaddon
 import xbmcgui as kodigui
 import xbmcplugin as kodiplugin
 
-from resources.lib import common, db as database, tags, scan, utils
+from resources.lib import common, tags, scan, utils
+from resources.lib.db import (
+    Audiobook,
+    Audiofile,
+    Bookmark,
+    DB_FILE_NAME,
+    database,
+)
 
 
 class Ausis(common.KodiPlugin):
 
-    def __init__(self, base_url, handle, addon, db):
-        super(Ausis, self).__init__(base_url, handle, addon)
-        self._db = db
+    _strings = {
+        'need_config': 30000,
+        'dir_not_set': 30001,
+        'scanning': 30007,
+        'ausis': 30008,
+        'library_empty_msg': 30009,
+        'scan_now?': 30010,
+        'yes': 30011,
+        'no': 30012,
+        'resume_latest': 30013,
+        'unknown_author': 30014,
+        'resume_furthest': 30015,
+        'remove_confirm_msg': 30016,
+        'are_you_sure': 30017,
+        'remove': 30018,
+        'error': 30020,
+        'sending_report': 30021,
+        'report_sent': 30022,
+        'report_sent_msg': 30023,
+    }
 
-    @property
-    def db(self):
-        return self._db
+    def __init__(self, base_url, handle, addon):
+        super(Ausis, self).__init__(base_url, handle, addon)
 
     def _prepare_bookmark_listitem(self, string_id, bookmark):
-        url = self._build_url(
-            mode='resume', bookmark_id=bookmark[b'id'])
-        position = utils.format_duration(bookmark[b'position'])
+        url = self._build_url(mode='resume', bookmark_id=bookmark.id)
+        position = utils.format_duration(bookmark.position)
         li = kodigui.ListItem(
             common.italic(
-                self._t(string_id) % (bookmark[b'title'], position)
+                self._t(string_id) % (bookmark.audiofile.title, position)
             )
         )
         return dict(handle=self._handle, url=url, listitem=li, isFolder=False)
@@ -36,16 +59,22 @@ class Ausis(common.KodiPlugin):
     def mode_main(self, args):
         directory = utils.decode_arg(
             self._addon.getSetting('audiobook_directory'))
-        audiobooks = self.db.get_all_audiobooks()
-        if not directory and not audiobooks:
-            kodigui.Dialog().ok(self._t(30000), self._t(30001))
+
+        audiobooks = Audiobook.select()
+        audiofiles = Audiofile.select()
+        audiobooks_with_files = peewee.prefetch(audiobooks, audiofiles)
+        total_books = len(audiobooks_with_files)
+        library_is_empty = not bool(total_books)
+
+        if not directory and library_is_empty:
+            kodigui.Dialog().ok(self._t('need_config'), self._t('dir_not_set'))
             return
-        elif directory and not audiobooks:
+        elif directory and library_is_empty:
             dialog = kodigui.Dialog()
             scan_now = dialog.yesno(
-                self._t(30008), line1=self._t(30009),
-                line2=self._t(30010), yeslabel=self._t(30011),
-                nolabel=self._t(30012)
+                self._t('ausis'), line1=self._t('library_empty_msg'),
+                line2=self._t('scan_now?'), yeslabel=self._t('yes'),
+                nolabel=self._t('no')
             )
             if scan_now:
                 kodi.executebuiltin(
@@ -56,47 +85,45 @@ class Ausis(common.KodiPlugin):
         for sort_method in common.AUDIOBOOK_SORT_METHODS:
             kodiplugin.addSortMethod(self._handle, sort_method)
 
-        for audiobook in audiobooks:
-            audiobook_id = audiobook[b'id']
-            cover = audiobook[b'cover_path']
-            if cover:
-                cover = os.path.join(
-                    directory, audiobook[b'path'], cover)
-            fanart = audiobook[b'fanart_path']
-            if fanart:
-                fanart = os.path.join(
-                    directory, audiobook[b'path'], fanart)
+        for audiobook in audiobooks_with_files:
             url = self._build_url(
-                mode='audiobook', audiobook_id=audiobook_id)
-            li = kodigui.ListItem(audiobook[b'title'], iconImage=cover)
-            info_labels = {
-                'duration': int(audiobook[b'duration']),
-                'artist': audiobook[b'author'],
-                'album': audiobook[b'title'],
+                mode='audiobook', audiobook_id=audiobook.id)
+            li = kodigui.ListItem(
+                audiobook.title,
+                iconImage=(
+                    os.path.join(directory, audiobook.cover_path)
+                    if audiobook.cover else None
+                )
+            )
+            duration = sum(i.duration for i in audiobook.audiofiles_prefetch)
+            li.setInfo('music', {
+                'duration': duration,
+                'artist': audiobook.author,
+                'album': audiobook.title,
                 'genre': 'Audiobook',
-            }
-            li.setInfo('music', info_labels)
-
-            li.setInfo('video', {
-                'dateadded': audiobook[b'date_added'].strftime(
-                    common.DATETIME_FORMAT),
             })
-            if audiobook[b'last_played']:
-                li.setInfo('video', {
-                    'lastplayed': audiobook[b'last_played'],
-                })
-            if fanart:
-                li.setProperty('Fanart_Image', fanart)
+            last_played = audiobook.last_played
+            li.setInfo('video', {
+                'dateadded': audiobook.date_added.strftime(
+                    common.DATETIME_FORMAT),
+                'lastplayed': last_played.strftime(
+                    common.DATETIME_FORMAT) if last_played else None,
+            })
+            if audiobook.fanart:
+                li.setProperty(
+                    'Fanart_Image',
+                    os.path.join(directory, audiobook.fanart_path),
+                )
             li.addContextMenuItems([
-                (self._t(30018), 'RunPlugin(%s)' % self._build_url(
-                    mode='remove', audiobook_id=audiobook_id)),
+                (self._t('remove'), 'RunPlugin(%s)' % self._build_url(
+                    mode='remove', audiobook_id=audiobook.id)),
             ])
             kodiplugin.addDirectoryItem(
                 handle=self._handle,
                 url=url,
                 listitem=li,
                 isFolder=True,
-                totalItems=len(audiobooks),
+                totalItems=total_books,
             )
         kodiplugin.endOfDirectory(self._handle)
 
@@ -107,30 +134,22 @@ class Ausis(common.KodiPlugin):
         if audiobook_id:
             audiobook_dir = utils.decode_arg(
                 self._addon.getSetting('audiobook_directory'))
-            audiobook, items = self.db.get_audiobook(audiobook_id)
-            cover = audiobook[b'cover_path']
-            if cover:
-                cover = os.path.join(
-                    audiobook_dir, audiobook[b'path'], cover)
-            fanart = audiobook[b'fanart_path']
-            if fanart:
-                fanart = os.path.join(
-                    audiobook_dir, audiobook[b'path'], fanart)
-
-            bookmarks = self.db.get_audiobook_bookmarks(audiobook_id)
+            audiobook = Audiobook.get(Audiobook.id == audiobook_id)
+            bookmarks = audiobook.bookmarks
             if bookmarks:
                 latest = utils.latest_bookmark(bookmarks)
                 furthest = utils.furthest_bookmark(bookmarks)
                 kodiplugin.addDirectoryItem(
-                    **self._prepare_bookmark_listitem(30013, latest)
+                    **self._prepare_bookmark_listitem('resume_latest', latest)
                 )
                 if not latest == furthest:
                     kodiplugin.addDirectoryItem(
-                        **self._prepare_bookmark_listitem(30015, furthest)
+                        **self._prepare_bookmark_listitem(
+                            'resume_furthest', furthest)
                     )
 
-            for item in items:
-                url = self._build_url(mode='play', audiofile_id=item[b'id'])
+            for item in audiobook.audiofiles:
+                url = self._build_url(mode='play', audiofile_id=item.id)
                 li = common.prepare_audiofile_listitem(
                     audiobook_dir, audiobook, item)
                 kodiplugin.addDirectoryItem(
@@ -138,7 +157,7 @@ class Ausis(common.KodiPlugin):
                     url=url,
                     listitem=li,
                     isFolder=False,
-                    totalItems=len(items),
+                    totalItems=len(audiobook.audiofiles),
                 )
             kodiplugin.endOfDirectory(self._handle)
         else:
@@ -149,15 +168,13 @@ class Ausis(common.KodiPlugin):
         if audiofile_id:
             audiobook_dir = utils.decode_arg(
                 self._addon.getSetting('audiobook_directory'))
-            audiobook, items = self.db.get_remaining_audiofiles(audiofile_id)
-            audiobook_path = audiobook[b'path']
+            audiofile = Audiofile.get(Audiofile.id == audiofile_id)
             playlist = kodi.PlayList(kodi.PLAYLIST_MUSIC)
             playlist.clear()
-            for item in items:
+            for item in audiofile.get_remaining():
                 li = common.prepare_audiofile_listitem(
-                    audiobook_dir, audiobook, item)
-                url = os.path.join(
-                    audiobook_dir, audiobook_path, item[b'file_path'])
+                    audiobook_dir, audiofile.audiobook, item)
+                url = os.path.join(audiobook_dir, item.path)
                 playlist.add(url, li)
             kodi.Player().play(playlist)
         else:
@@ -168,22 +185,21 @@ class Ausis(common.KodiPlugin):
             self._addon.getSetting('audiobook_directory'))
         bookmark_id = args.get('bookmark_id')
         if bookmark_id:
-            bookmark = self.db.get_bookmark(bookmark_id)
+            bookmark = Bookmark.get(Bookmark.id == bookmark_id)
             if not bookmark:
                 return
-            audiofile_id = bookmark[b'audiofile_id']
-            audiobook, items = self.db.get_remaining_audiofiles(audiofile_id)
-            audiobook_path = audiobook[b'path']
             playlist = kodi.PlayList(kodi.PLAYLIST_MUSIC)
             playlist.clear()
-            for idx, item in enumerate(items):
-                offset = 0.0 if idx > 0 else bookmark[b'position']
+            current = bookmark.audiofile
+            for item in current.get_remaining():
+                offset = bookmark.position if item.id == current.id else 0.0
                 li = common.prepare_audiofile_listitem(
-                    audiobook_dir, audiobook, item, data={'offset': offset})
+                    audiobook_dir, current.audiobook, item,
+                    data={'offset': offset}
+                )
                 if offset:
                     li.setProperty('StartOffset', '{0:.2f}'.format(offset))
-                url = os.path.join(
-                    audiobook_dir, audiobook_path, item[b'file_path'])
+                url = os.path.join(audiobook_dir, item.path)
                 playlist.add(url, li)
             player = kodi.Player()
             player.play(playlist)
@@ -193,16 +209,16 @@ class Ausis(common.KodiPlugin):
     def mode_remove(self, args):
         audiobook_id = args.get('audiobook_id')
         if audiobook_id:
-            audiobook, _ = self.db.get_audiobook(audiobook_id)
+            audiobook = Audiobook.get(Audiobook.id == audiobook_id)
             dialog = kodigui.Dialog()
             confirmed = dialog.yesno(
-                self._t(30008),
-                line1=self._t(30016) % audiobook[b'title'],
-                line2=self._t(30017), yeslabel=self._t(30011),
-                nolabel=self._t(30012)
+                self._t('ausis'),
+                line1=self._t('remove_confirm_msg') % audiobook.title,
+                line2=self._t('are_you_sure'), yeslabel=self._t('yes'),
+                nolabel=self._t('no')
             )
             if confirmed:
-                self.db.remove_audiobook(audiobook_id)
+                audiobook.delete_instance()
                 kodi.executebuiltin('Container.Refresh()')
         else:
             self.log('No audiobook ID provided!', level=kodi.LOGERROR)
@@ -210,19 +226,19 @@ class Ausis(common.KodiPlugin):
     def mode_scan(self, args):
         directory = self._addon.getSetting('audiobook_directory')
         if not directory:
-            kodigui.Dialog().ok(self._t(30000), self._t(30001))
+            kodigui.Dialog().ok(self._t('need_config'), self._t('dir_not_set'))
             return
 
         dialog = kodigui.DialogProgressBG()
-        dialog.create('ausis', self._t(30007))
+        dialog.create('ausis', self._t('scanning'))
         try:
             for subdir, m in scan.scan(directory, progress_cb=dialog.update):
                 # Check if audiobook at this path is already in the database.
                 u_subdir = utils.decode_arg(subdir)
-                audiobook_id = self.db.get_audiobook_by_path(u_subdir)
-                if audiobook_id:
+                audiobook = Audiobook.from_path(u_subdir)
+                if audiobook:
                     self.log('Audiobook at path: %s already exists in '
-                             'the library (ID: %s)' % (u_subdir, audiobook_id))
+                             'the library (ID: %s)' % (u_subdir, audiobook.id))
                 else:
                     audiofiles = sorted(m.get('audio', []))
                     if not audiofiles:
@@ -252,25 +268,28 @@ class Ausis(common.KodiPlugin):
                     if authors:
                         author = authors.pop()
                     else:
-                        author = self._t(30014)
+                        author = self._t('unknown_author')
 
-                    audiobook_id = self.db.add_audiobook(
-                        author, title, u_subdir, items)
+                    audiobook = Audiobook.create(
+                        author=author, title=title,
+                        path=u_subdir)
+                    for idx, (title, path, duration, size) in enumerate(items):
+                        Audiofile.create(
+                            audiobook=audiobook, title=title, sequence=idx,
+                            file_path=path, duration=duration, size=size)
 
-                if not self.db.get_cover(audiobook_id):
+                if not audiobook.cover:
                     covers = m.get('cover', [])
                     if covers:
-                        self.db.set_cover(
-                            audiobook_id,
-                            utils.decode_arg(utils.first_of(covers)),
-                        )
-                if not self.db.get_fanart(audiobook_id):
+                        audiobook.cover = utils.decode_arg(
+                            utils.first_of(covers))
+                        audiobook.save()
+                if not audiobook.fanart:
                     fanarts = m.get('fanart', [])
                     if fanarts:
-                        self.db.set_fanart(
-                            audiobook_id,
-                            utils.decode_arg(utils.first_of(fanarts)),
-                        )
+                        audiobook.fanart = utils.decode_arg(
+                            utils.first_of(fanarts))
+                        audiobook.save()
         except Exception as e:
             self.log(
                 'There was an error during scan: %s' % e, level=kodi.LOGERROR)
@@ -282,12 +301,16 @@ class Ausis(common.KodiPlugin):
 
 def main():
     addon = kodiaddon.Addon(id='plugin.audio.ausis')
+    base_url, handle = sys.argv[0], int(sys.argv[1])
+    ausis = Ausis(base_url, handle, addon)
     try:
-        base_url, handle = sys.argv[0], int(sys.argv[1])
         args = utils.parse_query(sys.argv[2][1:])
-        db_filename = common.get_db_path(database.DB_FILE_NAME)
-        with database.AusisDatabase(db_filename) as db:
-            Ausis(base_url, handle, addon, db).run(args)
+        db_filename = common.get_db_path(DB_FILE_NAME)
+        database.init(db_filename)
+        database.connect()
+        database.create_tables([Audiobook, Audiofile, Bookmark], safe=True)
+        with database.transaction():
+            ausis.run(args)
     except Exception:
         send_report = (
             addon.getSetting('send_crash_reports').lower() == 'true')
@@ -297,8 +320,8 @@ def main():
         # Send the crash report / inform the user.
         dialog = kodigui.Dialog()
         dialog.notification(
-            addon.getLocalizedString(30020),
-            addon.getLocalizedString(30021),
+            ausis._t('error'),
+            ausis._t('sending_report'),
             icon=kodigui.NOTIFICATION_ERROR,
             time=4000,
             sound=True,
@@ -308,12 +331,17 @@ def main():
             release=addon.getAddonInfo('version'))
         if sent:
             dialog.notification(
-                addon.getLocalizedString(30022),
-                addon.getLocalizedString(30023),
+                ausis._t('report_sent'),
+                ausis._t('report_sent_msg'),
                 icon=kodigui.NOTIFICATION_INFO,
                 time=2000,
                 sound=False,
             )
+    finally:
+        try:
+            database.close()
+        except:
+            pass
 
 if __name__ == '__main__':
     main()

@@ -1,19 +1,28 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import tempfile
+import datetime
+import os
 import unittest
 
-from lib import db as database, utils
+from lib import utils
+from lib.db import (
+    Audiobook,
+    Audiofile,
+    Bookmark,
+    database,
+)
 
 TEST_AUTHOR = 'Šatrijos Ragana'
 TEST_TITLE = 'Viktutė'
 TEST_PATH = '{TEST_AUTHOR:s} - {TEST_TITLE:s}'.format(**locals())
-TEST_DURATION_1 = 3377
-TEST_SIZE_1 = 40533561
-TEST_FILES = [
-    ['Lapkritis', '01 Viktutė.mp3', TEST_DURATION_1, TEST_SIZE_1],
-]
+DURATION_1H = 60 * 60
+DURATION_30M = 30 * 60
+SIZE_40M = 40 * 1024 * 1024
+TEST_FILES = {
+    1: ('Lapkritis', '01 Viktutė.mp3', DURATION_1H, SIZE_40M),
+    2: ('Gruodis', '02 Viktutė.mp3', DURATION_30M, SIZE_40M),
+}
 TEST_NARRATOR = 'Dovilė Riškuvienė'
 TEST_COVER_PATH = 'cover.jpg'
 TEST_FANART_PATH = 'fanart.png'
@@ -21,12 +30,15 @@ TEST_AUDIOBOOK = [
     TEST_AUTHOR, TEST_TITLE, TEST_PATH, TEST_FILES, TEST_NARRATOR,
     TEST_COVER_PATH, TEST_FANART_PATH,
 ]
-TEST_BOOKMARK_POSITION = 123
+POSITION_42 = 42
+POSITION_314 = 314
+DATETIME_2016_1_1 = datetime.datetime(2016, 1, 1, 12)
+DATETIME_2016_1_2 = datetime.datetime(2016, 1, 2, 12)
 
 
-def table_exists(cr, table):
+def table_exists(table):
     '''Checks if :param:`table` exists in the sqlite database.'''
-    cr.execute('''
+    result = database.execute_sql('''
     SELECT
         COUNT(1)
     FROM
@@ -36,219 +48,93 @@ def table_exists(cr, table):
     AND
         name = :table
     ;''', locals())
-    return bool(utils.first_of(cr.fetchone()))
+    return bool(utils.first_of(result.fetchone()))
 
 
-class DummyDatabase(database.Database):
-    SCHEMA = 'CREATE TABLE IF NOT EXISTS test (value varchar);'
-
-    def put_value(self, value):
-        self.cr.execute(
-            'INSERT INTO test (value) VALUES (:value);', locals())
-
-    def has_value(self, value):
-        self.cr.execute(
-            'SELECT COUNT(1) FROM test WHERE value = :value', locals())
-        return bool(utils.first_of(self.cr.fetchone()))
-
-
-class DummyMigratableDatabase(database.MigratableDatabase):
-
-    def migrate_0_to_1(cr):
-        cr.execute('CREATE TABLE test2 (value INTEGER);')
-
-    SCHEMA = 'CREATE TABLE IF NOT EXISTS test (value varchar);'
-    VERSION = 0
-    MIGRATIONS = (
-        (1, migrate_0_to_1),
-    )
-
-
-class DummyFaultyMigratableDatabase(DummyMigratableDatabase):
-
-    def migrate_0_to_1(cr):
-        '''Table 'test' already exists, so migration should fail.'''
-        cr.execute('CREATE TABLE test (value INTEGER);')
-
-    MIGRATIONS = (
-        (1, migrate_0_to_1),
-    )
-
-
-class TestDatabase(unittest.TestCase):
-
-    def test_initialize_initializes_schema(self):
-        db = DummyDatabase(':memory:')
-        db._connect()
-        db.initialize()
-        self.assertTrue(table_exists(db.cr, 'test'))
-
-    def test_exception_inside_with_statement_rollbacks_changes(self):
-        with tempfile.NamedTemporaryFile() as tmp:
-            dummy_db = DummyDatabase(tmp.name)
-            try:
-                with dummy_db as db:
-                    db.put_value('Hello')
-                    1 / 0
-            except ZeroDivisionError:
-                pass
-
-            with dummy_db as db:
-                self.assertFalse(db.has_value('Hello'))
-
-
-class TestMigratableDatabase(unittest.TestCase):
-
-    def test_initialize_executes_migrations(self):
-        with DummyMigratableDatabase(':memory:') as db:
-            self.assertTrue(
-                table_exists(db.cr, 'test2'),
-                msg='Table test2 was not created during migration',
-            )
-
-    def test_migration_increases_version_number(self):
-        with DummyMigratableDatabase(':memory:') as db:
-            self.assertEqual(db.get_version(), 1, msg='Wrong database version')
-
-    def test_failed_migration_raises_DatabaseMigrationError(self):
-        with self.assertRaises(database.DatabaseMigrationError):
-            with DummyFaultyMigratableDatabase(':memory:'):
-                pass
-
-
-class TestAusisDatabase(unittest.TestCase):
+class DatabaseTestCase(unittest.TestCase):
 
     def setUp(self):
-        super(TestAusisDatabase, self).setUp()
-        self.db = database.AusisDatabase(':memory:')
+        super(DatabaseTestCase, self).setUp()
+        database.init(':memory:')
+        database.connect()
+        database.create_tables([Audiobook, Audiofile, Bookmark], safe=True)
 
-    def test_tables_are_created(self):
-        with self.db as db:
-            for table in ('audiobooks', 'audiofiles', 'bookmarks'):
-                self.assertTrue(
-                    table_exists(db.cr, table),
-                    msg='Table: %s was not created' % table,
+
+class TestDatabase(DatabaseTestCase):
+
+    def test_init_initializes_schema(self):
+        self.assertTrue(table_exists('audiobook'))
+        self.assertTrue(table_exists('audiofile'))
+        self.assertTrue(table_exists('bookmark'))
+
+
+class TestAudiobook(DatabaseTestCase):
+
+    def setUp(self):
+        super(TestAudiobook, self).setUp()
+        self.audiobook = Audiobook.create(
+            author=TEST_AUTHOR,
+            title=TEST_TITLE,
+            path=TEST_PATH,
+            cover=TEST_COVER_PATH,
+            fanart=TEST_FANART_PATH,
+        )
+        self.audiofiles = {}
+        for idx, (title, path, duration, size) in TEST_FILES.iteritems():
+            audiofile = Audiofile.create(
+                audiobook=self.audiobook,
+                title=title,
+                sequence=idx,
+                file_path=path,
+                duration=duration,
+                size=size,
+            )
+            self.audiofiles[idx] = audiofile
+
+        self.bookmarks = []
+        bookmarks = [
+            (POSITION_42, DATETIME_2016_1_1),
+            (POSITION_314, DATETIME_2016_1_2),
+        ]
+        audiofile = utils.first_of(self.audiofiles.values())
+        for pos, date_added in bookmarks:
+            self.bookmarks.append(
+                Bookmark.create(
+                    audiofile=audiofile,
+                    position=pos,
+                    date_added=date_added,
                 )
-
-    def test_add_audiobook(self):
-        with self.db as db:
-            db.add_audiobook(*TEST_AUDIOBOOK)
-            db.cr.execute('SELECT COUNT(1) FROM audiobooks;')
-            result = db.cr.fetchone()
-            self.assertEqual(result[0], 1)
-
-    def test_get_all_audiobooks(self):
-        with self.db as db:
-            audiobook_id = db.add_audiobook(*TEST_AUDIOBOOK)
-            audiobooks = db.get_all_audiobooks()
-            self.assertEqual(
-                len(audiobooks), 1, 'Incorrect number of audiobooks')
-            self.assertEqual(audiobooks[0][b'id'], audiobook_id)
-
-    def test_get_audiobook(self):
-        with self.db as db:
-            audiobook_id = db.add_audiobook(*TEST_AUDIOBOOK)
-            audiobook, items = db.get_audiobook(audiobook_id)
-            self.assertEqual(audiobook[b'id'], audiobook_id)
-            self.assertEqual(
-                len(items), 1, 'Incorrect number of audiofiles')
-
-    def test_get_audiobook_by_path(self):
-        with self.db as db:
-            audiobook_id = db.add_audiobook(*TEST_AUDIOBOOK)
-            self.assertEqual(
-                audiobook_id, db.get_audiobook_by_path(TEST_PATH))
-            self.assertFalse(
-                db.get_audiobook_by_path('NON_EXISTING_PATH'),
-                msg='Audiobook at non-existing path was found',
             )
 
-    def test_get_cover(self):
-        with self.db as db:
-            audiobook_id = db.add_audiobook(*TEST_AUDIOBOOK)
-            self.assertEqual(db.get_cover(audiobook_id), TEST_COVER_PATH)
+    def test_from_path_with_correct_path_returns_audiobook(self):
+        audiobook = Audiobook.from_path(TEST_PATH)
+        self.assertEqual(audiobook, self.audiobook)
 
-    def test_set_cover(self):
-        with self.db as db:
-            new_cover_path = 'folder.jpg'
-            audiobook_id = db.add_audiobook(*TEST_AUDIOBOOK)
-            db.set_cover(audiobook_id, new_cover_path)
-            self.assertEqual(db.get_cover(audiobook_id), new_cover_path)
+    def test_from_path_with_some_incorrect_path_returns_None(self):
+        audiobook = Audiobook.from_path(TEST_PATH + 'blah')
+        self.assertFalse(audiobook)
 
-    def test_get_fanart(self):
-        with self.db as db:
-            audiobook_id = db.add_audiobook(*TEST_AUDIOBOOK)
-            self.assertEqual(db.get_fanart(audiobook_id), TEST_FANART_PATH)
+    def test_last_played_with_two_bookmarks_returns_latest(self):
+        last_played = self.audiobook.last_played
+        self.assertEqual(last_played, DATETIME_2016_1_2)
 
-    def test_set_fanart(self):
-        with self.db as db:
-            new_fanart_path = 'fan_art.jpg'
-            audiobook_id = db.add_audiobook(*TEST_AUDIOBOOK)
-            db.set_fanart(audiobook_id, new_fanart_path)
-            self.assertEqual(db.get_fanart(audiobook_id), new_fanart_path)
+    def test_audiobook_duration_calculation(self):
+        self.assertEqual(self.audiobook.duration, DURATION_1H + DURATION_30M)
 
-    def test_add_bookmark(self):
-        with self.db as db:
-            audiobook_id = db.add_audiobook(*TEST_AUDIOBOOK)
-            _, items = db.get_audiobook(audiobook_id)
-            item_id = items[0][b'id']
-            bookmark_id = db.add_bookmark(item_id, TEST_BOOKMARK_POSITION)
-            db.cr.execute('''
-            SELECT
-                audiofile_id,
-                position
-            FROM
-                bookmarks
-            WHERE
-                id = :bookmark_id
-            ;''', locals())
-            actual_item_id, actual_position = db.cr.fetchone()
-            self.assertEqual(actual_item_id, item_id)
-            self.assertEqual(actual_position, TEST_BOOKMARK_POSITION)
+    def test_audiobook_cover_path_calculation(self):
+        self.assertEqual(
+            self.audiobook.cover_path,
+            os.path.join(TEST_PATH, TEST_COVER_PATH),
+        )
 
-    def test_remove_audiobook_removes_audiobook(self):
-        with self.db as db:
-            audiobook_id = db.add_audiobook(*TEST_AUDIOBOOK)
-            result = db.remove_audiobook(audiobook_id)
-            self.assertTrue(result)
-            db.cr.execute('''
-            SELECT
-                id
-            FROM
-                audiobooks
-            WHERE
-                id = :audiobook_id
-            ;''', locals())
-            self.assertFalse(db.cr.fetchall())
-
-    def test_remove_audiobook_removes_its_audiofiles(self):
-        with self.db as db:
-            audiobook_id = db.add_audiobook(*TEST_AUDIOBOOK)
-            db.remove_audiobook(audiobook_id)
-            db.cr.execute('''
-            SELECT
-                id
-            FROM
-                audiofiles
-            WHERE
-                audiobook_id = :audiobook_id
-            ;''', locals())
-            self.assertFalse(db.cr.fetchall())
+    def test_audiobook_cover_fanart_calculation(self):
+        self.assertEqual(
+            self.audiobook.fanart_path,
+            os.path.join(TEST_PATH, TEST_FANART_PATH),
+        )
 
     def test_remove_audiobook_removes_its_bookmarks(self):
-        with self.db as db:
-            audiobook_id = db.add_audiobook(*TEST_AUDIOBOOK)
-            _, items = db.get_audiobook(audiobook_id)
-            item_id = utils.first_of(items)[b'id']
-            bookmark_id = db.add_bookmark(item_id, TEST_BOOKMARK_POSITION)
-            self.assertTrue(bookmark_id)
-            db.remove_audiobook(audiobook_id)
-            db.cr.execute('''
-            SELECT
-                id
-            FROM
-                bookmarks
-            WHERE
-                audiobook_id = :audiobook_id
-            ;''', locals())
-            self.assertFalse(db.cr.fetchall())
+        audiofile_id = utils.first_of(self.audiofiles.values()).id
+        self.audiobook.delete_instance()
+        results = Bookmark.select().where(audiofile_id == audiofile_id)
+        self.assertFalse(results)
