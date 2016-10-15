@@ -85,31 +85,3 @@ msgstr ""
 msgctxt "#30018"
 msgid "Remove"
 msgstr ""
-
-msgctxt "#30019"
-msgid "Send crash reports"
-msgstr ""
-
-msgctxt "#30020"
-msgid "An error occured in ausis"
-msgstr ""
-
-msgctxt "#30021"
-msgid "Sending crash report..."
-msgstr ""
-
-msgctxt "#30022"
-msgid "Report sent"
-msgstr ""
-
-msgctxt "#30023"
-msgid "Crash report was successfully sent"
-msgstr ""
-
-msgctxt "#30024"
-msgid "Report failed"
-msgstr ""
-
-msgctxt "#30025"
-msgid "Sending the crash report failed"
-msgstr ""
