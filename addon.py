@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import contextlib
 import os
 import sys
 
@@ -41,6 +42,8 @@ class Ausis(common.KodiPlugin):
         'sending_report': 30021,
         'report_sent': 30022,
         'report_sent_msg': 30023,
+        'report_failed': 30024,
+        'report_failed_msg': 30025,
     }
 
     def __init__(self, base_url, handle, addon):
@@ -303,45 +306,62 @@ def main():
     addon = kodiaddon.Addon(id='plugin.audio.ausis')
     base_url, handle = sys.argv[0], int(sys.argv[1])
     ausis = Ausis(base_url, handle, addon)
-    try:
-        args = utils.parse_query(sys.argv[2][1:])
-        db_filename = common.get_db_path(DB_FILE_NAME)
-        database.init(db_filename)
-        database.connect()
-        database.create_tables([Audiobook, Audiofile, Bookmark], safe=True)
-        with database.transaction():
-            ausis.run(args)
-    except Exception:
-        send_report = (
-            addon.getSetting('send_crash_reports').lower() == 'true')
-        if not send_report:
-            raise
 
-        # Send the crash report / inform the user.
-        dialog = kodigui.Dialog()
-        dialog.notification(
+    def enabled_cb():
+        '''Callback to check if crash reports are enabled.'''
+        return addon.getSetting('send_crash_reports').lower() == 'true'
+
+    def init_cb():
+        '''Callback for when the crash report is being sent to Sentry.'''
+        kodi.executebuiltin('ActivateWindow(Home)')
+        kodigui.Dialog().notification(
             ausis._t('error'),
             ausis._t('sending_report'),
             icon=kodigui.NOTIFICATION_ERROR,
             time=4000,
             sound=True,
         )
-        kodi.executebuiltin('ActivateWindow(Home)')
-        sent = common.send_crash_report(
-            release=addon.getAddonInfo('version'))
-        if sent:
-            dialog.notification(
-                ausis._t('report_sent'),
-                ausis._t('report_sent_msg'),
-                icon=kodigui.NOTIFICATION_INFO,
-                time=2000,
-                sound=False,
-            )
-    finally:
-        try:
-            database.close()
-        except:
-            pass
+
+    def success_cb():
+        '''
+        Callback for when the crash report is successfully sent to Sentry.
+        '''
+        kodigui.Dialog().notification(
+            ausis._t('report_sent'),
+            ausis._t('report_sent_msg'),
+            icon=kodigui.NOTIFICATION_INFO,
+            time=2000,
+            sound=False,
+        )
+
+    def fail_cb(msg=None):
+        '''Callback for when sending the crash report to Sentry fails.'''
+        if msg:
+            ausis.log(msg, level=kodi.LOGERROR)
+        kodigui.Dialog().notification(
+            ausis._t('report_failed'),
+            ausis._t('report_failed_msg'),
+            icon=kodigui.NOTIFICATION_ERROR,
+            time=2000,
+            sound=False,
+        )
+
+    args = utils.parse_query(sys.argv[2][1:])
+    db_filename = common.get_db_path(DB_FILE_NAME)
+    database.init(db_filename)
+    database.connect()
+    database.create_tables([Audiobook, Audiofile, Bookmark], safe=True)
+    raven = common.LazyRavenClient(
+        common.SENTRY_URL,
+        release=addon.getAddonInfo('version'),
+        enabled_cb=enabled_cb,
+        init_cb=init_cb,
+        success_cb=success_cb,
+        fail_cb=fail_cb,
+    )
+    with raven, contextlib.closing(database), database.transaction():
+        ausis.run(args)
+
 
 if __name__ == '__main__':
     main()

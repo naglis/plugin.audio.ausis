@@ -105,3 +105,11 @@ msgstr ""
 msgctxt "#30023"
 msgid "Crash report was successfully sent"
 msgstr ""
+
+msgctxt "#30024"
+msgid "Report failed"
+msgstr ""
+
+msgctxt "#30025"
+msgid "Sending the crash report failed"
+msgstr ""
