@@ -145,11 +145,11 @@ class LazyRavenClient(object):
     :class:`raven.transport.threaded.ThreadedHTTPTransport`.
     '''
 
-    def __init__(self, dsn, release=None, timeout=3, enabled_cb=None,
+    def __init__(self, dsn, timeout=3, release=None, enabled_cb=None,
                  init_cb=None, success_cb=None, fail_cb=None):
         self._dsn = dsn
-        self.release = release
         self._timeout = timeout
+        self.release = release
         self._enabled_cb = enabled_cb
         self._init_cb = init_cb
         self._success_cb = success_cb
