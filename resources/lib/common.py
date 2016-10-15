@@ -40,7 +40,7 @@ SENTRY_URL = (
 
 
 def get_db_path(db_name):
-    kodi_db_dir = kodi.translatePath('special://database')
+    kodi_db_dir = kodi.translatePath('special://database').decode('utf-8')
     return os.path.join(kodi_db_dir, db_name)
 
 
