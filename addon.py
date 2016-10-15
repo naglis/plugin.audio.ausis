@@ -37,6 +37,7 @@ class Ausis(common.KodiPlugin):
         'resume_furthest': 30015,
         'remove_confirm_msg': 30016,
         'are_you_sure': 30017,
+        'remove': 30018,
     }
 
     def __init__(self, base_url, handle, addon):
