@@ -105,3 +105,11 @@ msgstr "Ataskaita išsiųsta"
 msgctxt "#30023"
 msgid "Crash report was successfully sent"
 msgstr "Klaidos ataskaita sėkmingai išsiųsta"
+
+msgctxt "#30024"
+msgid "Report failed"
+msgstr "Išsiųsti nepavyko"
+
+msgctxt "#30025"
+msgid "Sending the crash report failed"
+msgstr "Nepavyko išsiųsti klaidos ataskaitos"
