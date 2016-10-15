@@ -311,40 +311,10 @@ def main():
         '''Callback to check if crash reports are enabled.'''
         return addon.getSetting('send_crash_reports').lower() == 'true'
 
-    def init_cb():
-        '''Callback for when the crash report is being sent to Sentry.'''
-        kodi.executebuiltin('ActivateWindow(Home)')
-        kodigui.Dialog().notification(
-            ausis._t('error'),
-            ausis._t('sending_report'),
-            icon=kodigui.NOTIFICATION_ERROR,
-            time=4000,
-            sound=True,
-        )
-
-    def success_cb():
-        '''
-        Callback for when the crash report is successfully sent to Sentry.
-        '''
-        kodigui.Dialog().notification(
-            ausis._t('report_sent'),
-            ausis._t('report_sent_msg'),
-            icon=kodigui.NOTIFICATION_INFO,
-            time=2000,
-            sound=False,
-        )
-
     def fail_cb(msg=None):
         '''Callback for when sending the crash report to Sentry fails.'''
         if msg:
             ausis.log(msg, level=kodi.LOGERROR)
-        kodigui.Dialog().notification(
-            ausis._t('report_failed'),
-            ausis._t('report_failed_msg'),
-            icon=kodigui.NOTIFICATION_ERROR,
-            time=2000,
-            sound=False,
-        )
 
     args = utils.parse_query(sys.argv[2][1:])
     db_filename = common.get_db_path(DB_FILE_NAME)
@@ -355,8 +325,6 @@ def main():
         common.SENTRY_URL,
         release=addon.getAddonInfo('version'),
         enabled_cb=enabled_cb,
-        init_cb=init_cb,
-        success_cb=success_cb,
         fail_cb=fail_cb,
     )
     with raven, contextlib.closing(database), database.transaction():
