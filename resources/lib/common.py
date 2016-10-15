@@ -131,30 +131,77 @@ def prepare_audiofile_listitem(audiobook_dir, audiobook, item, data=None):
     return li
 
 
-def send_crash_report(release=None, timeout=3):
-    # Importing Raven and setting up a client might take a while, depending
-    # on the performance of the system, and as Kodi plugins are run on each
-    # invocation, it is quicker to just initialize the Raven client only when
-    # an exception actually occurs.
+class LazyRavenClient(object):
+    '''
+    Lazy Raven client context manager.
 
-    # Also, we use the blocking :class:`raven.transport.http.HTTPTransport`,
-    # because Kodi has problems shutting down when using the default threaded
-    # :class:`raven.transport.threaded.ThreadedHTTPTransport`.
-    success = False
-    try:
-        import raven
-        client = raven.Client(
-            dsn='%s?timeout=%d' % (SENTRY_URL, timeout),
-            release=release,
-            install_sys_hook=False,
-            install_logging_hook=False,
-            transport=raven.transport.http.HTTPTransport,
+    Importing Raven and setting up a client might take a while, depending
+    on the performance of the system, and as Kodi plugins are run on each
+    invocation, it is quicker to just initialize the Raven client only when
+    an exception actually occurs.
+
+    Also, we use the blocking :class:`raven.transport.http.HTTPTransport`,
+    because Kodi has problems shutting down when using the default threaded
+    :class:`raven.transport.threaded.ThreadedHTTPTransport`.
+    '''
+
+    def __init__(self, dsn, release=None, timeout=3, enabled_cb=None,
+                 init_cb=None, success_cb=None, fail_cb=None):
+        self._dsn = dsn
+        self.release = release
+        self._timeout = timeout
+        self._enabled_cb = enabled_cb
+        self._init_cb = init_cb
+        self._success_cb = success_cb
+        self._fail_cb = fail_cb
+
+    @property
+    def dsn(self):
+        return '{o._dsn}?timeout={o._timeout:d}'.format(o=self)
+
+    @property
+    def enabled(self):
+        return (
+            self._enabled_cb and
+            callable(self._enabled_cb) and
+            self._enabled_cb()
         )
-        client.captureException()
-    except ImportError:
-        kodi.log('Failed to import Raven', level=kodi.LOGERROR)
-    except Exception:
-        kodi.log('Failed to send error report to Sentry', level=kodi.LOGERROR)
-    else:
-        success = True
-    return success
+
+    def init(self):
+        if self._init_cb and callable(self._init_cb):
+            self._init_cb()
+
+    def success(self):
+        if self._success_cb and callable(self._success_cb):
+            self._success_cb()
+
+    def fail(self, msg):
+        if self._fail_cb and callable(self._fail_cb):
+            self._fail_cb(msg)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if not (exc_val and self.enabled):
+            return
+
+        try:
+            self.init()
+            import raven
+            client = raven.Client(
+                dsn=self.dsn,
+                release=self.release,
+                install_sys_hook=False,
+                install_logging_hook=False,
+                transport=raven.transport.http.HTTPTransport,
+            )
+            client.captureException(
+                exc_info=(exc_type, exc_val, exc_tb),
+            )
+        except ImportError:
+            self.fail('Failed to import Raven')
+        except Exception:
+            self.fail('Failed to send error report to Sentry')
+        else:
+            self.success()
