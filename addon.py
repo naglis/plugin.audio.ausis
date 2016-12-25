@@ -122,7 +122,7 @@ GROUP BY
                 'album': audiobook.title,
                 'genre': 'Audiobook',
             })
-            last_played = common.parse_datetime_str(audiobook.date_last_played)
+            last_played = utils.parse_datetime_str(audiobook.date_last_played)
             li.setInfo('video', {
                 'dateadded': audiobook.date_added.strftime(
                     common.DATETIME_FORMAT),
