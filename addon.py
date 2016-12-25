@@ -57,10 +57,34 @@ class Ausis(common.KodiPlugin):
         directory = utils.decode_arg(
             self._addon.getSetting('audiobook_directory'))
 
-        audiobooks = Audiobook.select()
-        audiofiles = Audiofile.select()
-        audiobooks_with_files = peewee.prefetch(audiobooks, audiofiles)
-        total_books = len(audiobooks_with_files)
+        # Here we query on audiobook, audiofile and bookmark tables.
+        # This is done in a raw query in order to decrease the number of
+        # queries when calculating audiobook total duration and last played
+        # position when called via peewee ORM.
+        audiobooks = Audiobook.raw('''
+SELECT
+    ab.*,
+    SUM(af.duration) AS total_duration,
+    MAX(
+        (
+        SELECT
+            MAX(b.date_added)
+        FROM
+            bookmark AS b
+        WHERE
+            b.audiofile_id = af.id
+        )
+    ) AS date_last_played
+FROM
+    audiobook AS ab
+INNER JOIN
+    audiofile AS af
+ON
+    ab.id = af.audiobook_id
+GROUP BY
+    af.audiobook_id;''').execute()
+
+        total_books = len(audiobooks)
         library_is_empty = not bool(total_books)
 
         if not directory and library_is_empty:
@@ -82,7 +106,7 @@ class Ausis(common.KodiPlugin):
         for sort_method in common.AUDIOBOOK_SORT_METHODS:
             kodiplugin.addSortMethod(self._handle, sort_method)
 
-        for audiobook in audiobooks_with_files:
+        for audiobook in audiobooks:
             url = self._build_url(
                 mode='audiobook', audiobook_id=audiobook.id)
             li = kodigui.ListItem(
@@ -92,14 +116,13 @@ class Ausis(common.KodiPlugin):
                     if audiobook.cover else None
                 )
             )
-            duration = sum(i.duration for i in audiobook.audiofiles_prefetch)
             li.setInfo('music', {
-                'duration': duration,
+                'duration': audiobook.total_duration,
                 'artist': audiobook.author,
                 'album': audiobook.title,
                 'genre': 'Audiobook',
             })
-            last_played = audiobook.last_played
+            last_played = common.parse_datetime_str(audiobook.date_last_played)
             li.setInfo('video', {
                 'dateadded': audiobook.date_added.strftime(
                     common.DATETIME_FORMAT),

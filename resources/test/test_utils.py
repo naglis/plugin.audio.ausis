@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import datetime
 import unittest
 
 from lib import utils
@@ -79,3 +80,23 @@ class TestUtils(unittest.TestCase):
         query = 'a=1&b=3&c=2&b=4'
         args = utils.parse_query(query)
         self.assertEqual(args, {'a': '1', 'b': ['3', '4'], 'c': '2'})
+
+    def test_parse_datetime_str(self):
+        test_cases = [
+            ('', None),
+            ('foo', None),
+            (None, None),
+            ('1-2-3', None),
+            ('2016-01-01', datetime.datetime(2016, 1, 1)),
+            ('2016-01-01 12:04:05.123456',
+             datetime.datetime(2016, 1, 1, 12, 4, 5, 123456)),
+            ('12:04',
+             datetime.datetime(1900, 1, 1, 12, 4)),
+        ]
+        for s, expected in test_cases:
+            actual = utils.parse_datetime_str(s)
+            self.assertEqual(
+                actual, expected,
+                'Datetime string: %s parsed as: %s, expected: %s' % (
+                    s, actual, expected),
+            )

@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 import base64
+import datetime
 import json
 import operator
 import re
@@ -13,6 +14,14 @@ AUDIO_EXTENSIONS = (r'mp3', r'ogg', r'm4a', r'm4b')
 COVER_FILENAMES = (r'cover', r'folder', r'cover[\s_-]?art')
 FANART_FILENAMES = (r'fan[\s_-]?art',)
 IGNORE_FILENAME = b'.ausis_ignore'
+SQLITE_DATETIME_FORMATS = (
+    '%Y-%m-%d %H:%M:%S',
+    '%Y-%m-%d %H:%M:%S.%f',
+    '%Y-%m-%d',
+    '%H:%M:%S',
+    '%H:%M:%S.%f',
+    '%H:%M',
+)
 
 first_of = operator.itemgetter(0)
 
@@ -106,3 +115,11 @@ def furthest_bookmark(bookmarks):
             reverse=True,
         )
     )
+
+
+def parse_datetime_str(s, formats=SQLITE_DATETIME_FORMATS):
+    for fmt in formats:
+        try:
+            return datetime.datetime.strptime(s, fmt)
+        except (TypeError, ValueError):
+            pass
