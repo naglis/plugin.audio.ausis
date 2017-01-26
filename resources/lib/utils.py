@@ -9,8 +9,8 @@ import re
 import urlparse
 
 
-IMAGE_EXTENSIONS = (r'jpg', r'jpeg', r'png')
-AUDIO_EXTENSIONS = (r'mp3', r'ogg', r'm4a', r'm4b')
+IMAGE_EXTENSIONS = ('jpg', 'jpeg', 'png')
+AUDIO_EXTENSIONS = ('mp3', 'ogg', 'opus', 'm4a', 'm4b')
 COVER_FILENAMES = (r'cover', r'folder', r'cover[\s_-]?art')
 FANART_FILENAMES = (r'fan[\s_-]?art',)
 IGNORE_FILENAME = b'.ausis_ignore'

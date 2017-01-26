@@ -33,6 +33,10 @@ def get_tags(file_path):
         artist = single_item(tags.get('artist'))
         album = single_item(tags.get('album'))
         title = single_item(tags.get('title'))
+    elif ftype == mutagen.oggopus.OggOpusInfo:
+        artist = single_item(tags.get('artist'))
+        album = single_item(tags.get('album'))
+        title = single_item(tags.get('title'))
     elif ftype == mutagen.mp3.MPEGInfo:
         artist = id3_getter('TPE1', tags)
         album = id3_getter('TALB', tags)
