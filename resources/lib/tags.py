@@ -9,7 +9,7 @@ import utils
 
 
 Tags = collections.namedtuple(
-    'Tags', ['artist', 'album', 'title', 'narrator', 'duration'])
+    'Tags', ['artist', 'album', 'title', 'duration'])
 
 
 def single_item(tags):
@@ -51,6 +51,5 @@ def get_tags(file_path):
         artist=artist,
         album=album,
         title=title,
-        narrator=None,
         duration=duration,
     )

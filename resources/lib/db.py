@@ -41,9 +41,7 @@ class Audiobook(BaseModel):
     )
     cover = CharField(null=True)
     fanart = CharField(null=True)
-    narrator = CharField(null=True)
     path = CharField(index=True, unique=True)
-    summary = TextField(null=True)
 
     @property
     def duration(self):
