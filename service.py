@@ -1,16 +1,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import contextlib
 import operator
 
 import xbmc as kodi
-import xbmcaddon as kodiaddon
 
 from resources.lib import common
 from resources.lib.db import (
-    # Audiobook,
-    # Audiofile,
     Bookmark,
     DB_FILE_NAME,
     database,
@@ -103,23 +99,13 @@ class AudioBookPlayer(kodi.Player):
 def main():
     database.init(DB_PATH)
     database.connect()
-    # database.create_tables([Audiobook, Audiofile, Bookmark], True)
     database.create_tables([Bookmark], True)
     monitor = kodi.Monitor()
     player = AudioBookPlayer()  # noqa
 
-    def enabled_cb():
-        addon = kodiaddon.Addon(id='plugin.audio.ausis')
-        return addon.getSetting('send_crash_reports').lower() == 'true'
-
-    raven = common.LazyRavenClient(
-        common.SENTRY_URL,
-        enabled_cb=enabled_cb,
-    )
-    with raven, contextlib.closing(database):
-        while not monitor.abortRequested():
-            if monitor.waitForAbort(10):
-                break
+    while not monitor.abortRequested():
+        if monitor.waitForAbort(10):
+            break
     del player
     del monitor
 

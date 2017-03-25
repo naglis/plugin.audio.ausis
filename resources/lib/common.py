@@ -34,12 +34,6 @@ AUDIOBOOK_SORT_METHODS = (
 )
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
-# I know, I know... This is just mild obfuscation.
-SENTRY_URL = (
-    '68747470733a2f2f653532396430633836653434343931336161323263376166633639336'
-    '23634313a3937636438383234393265663432393838366534313730376635633035636130'
-    '4073656e7472792e696f2f313031383937').decode('hex')
-
 
 def json_rpc(method, **params):
     values = {
@@ -151,79 +145,3 @@ def prepare_audiofile_listitem(audiobook_dir, audiobook, item, data=None):
         'fanart': fanart,
     })
     return li
-
-
-class LazyRavenClient(object):
-    '''
-    Lazy Raven client context manager.
-
-    Importing Raven and setting up a client might take a while, depending
-    on the performance of the system, and as Kodi plugins are run on each
-    invocation, it is quicker to just initialize the Raven client only when
-    an exception actually occurs.
-
-    Also, we use the blocking :class:`raven.transport.http.HTTPTransport`,
-    because Kodi has problems shutting down when using the default threaded
-    :class:`raven.transport.threaded.ThreadedHTTPTransport`.
-    '''
-
-    def __init__(self, dsn, timeout=3, release=None, enabled_cb=None,
-                 init_cb=None, success_cb=None, fail_cb=None):
-        self._dsn = dsn
-        self._timeout = timeout
-        self.release = release
-        self._enabled_cb = enabled_cb
-        self._init_cb = init_cb
-        self._success_cb = success_cb
-        self._fail_cb = fail_cb
-
-    @property
-    def dsn(self):
-        return '{o._dsn}?timeout={o._timeout:d}'.format(o=self)
-
-    @property
-    def enabled(self):
-        return (
-            self._enabled_cb and
-            callable(self._enabled_cb) and
-            self._enabled_cb()
-        )
-
-    def init(self):
-        if self._init_cb and callable(self._init_cb):
-            self._init_cb()
-
-    def success(self):
-        if self._success_cb and callable(self._success_cb):
-            self._success_cb()
-
-    def fail(self, msg):
-        if self._fail_cb and callable(self._fail_cb):
-            self._fail_cb(msg)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if not (exc_val and self.enabled):
-            return
-
-        try:
-            self.init()
-            import raven
-            client = raven.Client(
-                dsn=self.dsn,
-                release=self.release,
-                install_sys_hook=False,
-                install_logging_hook=False,
-                transport=raven.transport.http.HTTPTransport,
-            )
-            client.captureException(
-                exc_info=(exc_type, exc_val, exc_tb),
-            )
-        except ImportError:
-            self.fail('Failed to import Raven')
-        except Exception:
-            self.fail('Failed to send error report to Sentry')
-        else:
-            self.success()
