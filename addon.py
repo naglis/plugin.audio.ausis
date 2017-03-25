@@ -2,10 +2,11 @@
 from __future__ import unicode_literals
 
 import contextlib
+import operator
 import os
 import sys
+import time
 
-import peewee
 import xbmc as kodi
 import xbmcaddon as kodiaddon
 import xbmcgui as kodigui
@@ -19,6 +20,10 @@ from resources.lib.db import (
     DB_FILE_NAME,
     database,
 )
+
+# by_label = operator.itemgetter('file')
+def by_label(item):
+    return item.get('file')
 
 
 class Ausis(common.KodiPlugin):
@@ -54,96 +59,102 @@ class Ausis(common.KodiPlugin):
         return dict(handle=self._handle, url=url, listitem=li, isFolder=False)
 
     def mode_main(self, args):
-        directory = utils.decode_arg(
-            self._addon.getSetting('audiobook_directory'))
+        # directory = utils.decode_arg(
+            # self._addon.getSetting('audiobook_directory'))
 
         # Here we query on audiobook, audiofile and bookmark tables.
         # This is done in a raw query in order to decrease the number of
         # queries when calculating audiobook total duration and last played
         # position when called via peewee ORM.
-        audiobooks = Audiobook.raw('''
-SELECT
-    ab.*,
-    SUM(af.duration) AS total_duration,
-    MAX(
-        (
-        SELECT
-            MAX(b.date_added)
-        FROM
-            bookmark AS b
-        WHERE
-            b.audiofile_id = af.id
-        )
-    ) AS date_last_played
-FROM
-    audiobook AS ab
-INNER JOIN
-    audiofile AS af
-ON
-    ab.id = af.audiobook_id
-GROUP BY
-    af.audiobook_id;''').execute()
+        # audiobooks = Audiobook.raw('''
+# SELECT
+    # ab.*,
+    # SUM(af.duration) AS total_duration,
+    # MAX(
+        # (
+        # SELECT
+            # MAX(b.date_added)
+        # FROM
+            # bookmark AS b
+        # WHERE
+            # b.audiofile_id = af.id
+        # )
+    # ) AS date_last_played
+# FROM
+    # audiobook AS ab
+# INNER JOIN
+    # audiofile AS af
+# ON
+    # ab.id = af.audiobook_id
+# GROUP BY
+    # af.audiobook_id;''').execute()
 
-        total_books = len(audiobooks)
-        library_is_empty = not bool(total_books)
+        # total_books = len(audiobooks)
+        # library_is_empty = not bool(total_books)
 
-        if not directory and library_is_empty:
-            kodigui.Dialog().ok(self._t('need_config'), self._t('dir_not_set'))
-            return
-        elif directory and library_is_empty:
-            dialog = kodigui.Dialog()
-            scan_now = dialog.yesno(
-                self._t('ausis'), line1=self._t('library_empty_msg'),
-                line2=self._t('scan_now?'), yeslabel=self._t('yes'),
-                nolabel=self._t('no')
-            )
-            if scan_now:
-                kodi.executebuiltin(
-                    'RunPlugin(%s)' % self._build_url(mode='scan')
-                )
-                return
+        # if not directory and library_is_empty:
+            # kodigui.Dialog().ok(self._t('need_config'), self._t('dir_not_set'))
+            # return
+        # elif directory and library_is_empty:
+            # dialog = kodigui.Dialog()
+            # scan_now = dialog.yesno(
+                # self._t('ausis'), line1=self._t('library_empty_msg'),
+                # line2=self._t('scan_now?'), yeslabel=self._t('yes'),
+                # nolabel=self._t('no')
+            # )
+            # if scan_now:
+                # kodi.executebuiltin(
+                    # 'RunPlugin(%s)' % self._build_url(mode='scan')
+                # )
+                # return
 
-        for sort_method in common.AUDIOBOOK_SORT_METHODS:
-            kodiplugin.addSortMethod(self._handle, sort_method)
+        # for sort_method in common.AUDIOBOOK_SORT_METHODS:
+            # kodiplugin.addSortMethod(self._handle, sort_method)
 
-        for audiobook in audiobooks:
+        # bookmarks = Bookmark.select()
+        for bookmark in Bookmark.select():
             url = self._build_url(
-                mode='audiobook', audiobook_id=audiobook.id)
+                mode='resume', bookmark_id=bookmark.id)
+            song_info = common.json_rpc(
+                'AudioLibrary.GetSongDetails', songid=bookmark.song_id, properties=[
+                    'artist', 'title', 'duration', 'thumbnail', 'album']).get('result', {}).get('songdetails', {})
+            if not song_info:
+                continue
+            self.log('%s' % song_info, level=kodi.LOGERROR)
+
             li = kodigui.ListItem(
-                audiobook.title,
-                iconImage=(
-                    os.path.join(directory, audiobook.cover_path)
-                    if audiobook.cover else None
-                )
+                u'{album} - {title} [{bookmark.name}] ({bookmark.position}s)'.format(
+                    bookmark=bookmark, **song_info),
+                iconImage=song_info.get('thumbnail'),
             )
             li.setInfo('music', {
-                'duration': audiobook.total_duration,
-                'artist': audiobook.author,
-                'album': audiobook.title,
+                'duration': song_info.get('duration', 0),
+                'artist': u', '.join(song_info.get('artist', [])),
+                'album': song_info.get('album'),
                 'genre': 'Audiobook',
             })
-            last_played = utils.parse_datetime_str(audiobook.date_last_played)
-            li.setInfo('video', {
-                'dateadded': audiobook.date_added.strftime(
-                    common.DATETIME_FORMAT),
-                'lastplayed': last_played.strftime(
-                    common.DATETIME_FORMAT) if last_played else None,
-            })
-            if audiobook.fanart:
-                li.setProperty(
-                    'Fanart_Image',
-                    os.path.join(directory, audiobook.fanart_path),
-                )
-            li.addContextMenuItems([
-                (self._t('remove'), 'RunPlugin(%s)' % self._build_url(
-                    mode='remove', audiobook_id=audiobook.id)),
-            ])
+            # last_played = utils.parse_datetime_str(audiobook.date_last_played)
+            # li.setInfo('video', {
+                # 'dateadded': audiobook.date_added.strftime(
+                    # common.DATETIME_FORMAT),
+                # 'lastplayed': last_played.strftime(
+                    # common.DATETIME_FORMAT) if last_played else None,
+            # })
+            # if audiobook.fanart:
+                # li.setProperty(
+                    # 'Fanart_Image',
+                    # os.path.join(directory, audiobook.fanart_path),
+                # )
+            # li.addContextMenuItems([
+                # (self._t('remove'), 'RunPlugin(%s)' % self._build_url(
+                    # mode='remove', audiobook_id=audiobook.id)),
+            # ])
             kodiplugin.addDirectoryItem(
                 handle=self._handle,
                 url=url,
                 listitem=li,
-                isFolder=True,
-                totalItems=total_books,
+                isFolder=False,
+                # totalItems=total_books,
             )
         kodiplugin.endOfDirectory(self._handle)
 
@@ -201,30 +212,86 @@ GROUP BY
             self.log('No audiofile ID provided!', level=kodi.LOGERROR)
 
     def mode_resume(self, args):
-        audiobook_dir = utils.decode_arg(
-            self._addon.getSetting('audiobook_directory'))
+        # audiobook_dir = utils.decode_arg(
+            # self._addon.getSetting('audiobook_directory'))
         bookmark_id = args.get('bookmark_id')
         if bookmark_id:
             bookmark = Bookmark.get(Bookmark.id == bookmark_id)
             if not bookmark:
                 return
+            album_songs = sorted(common.json_rpc(
+                'AudioLibrary.GetSongs',
+                properties=[
+                    'file',
+                ],
+                filter={
+                    'albumid': bookmark.album_id,
+                },
+            ).get('result', {}).get('songs', []), key=by_label)
+
+            # filtered = []
+            # found = False
+            # for song in album_songs:
+                # if song['songid'] == bookmark.song_id:
+                    # found = True
+                # if found:
+                    # filtered.append(song)
+
+
+            # current = bookmark.audiofile
             playlist = kodi.PlayList(kodi.PLAYLIST_MUSIC)
             playlist.clear()
-            current = bookmark.audiofile
-            for item in current.get_remaining():
-                offset = bookmark.position if item.id == current.id else 0.0
-                li = common.prepare_audiofile_listitem(
-                    audiobook_dir, current.audiobook, item,
-                    data={'offset': offset}
+            playlist_id = playlist.getPlayListId()
+            playlist_pos, offset = -1, 0
+            items = []
+            for idx, item in enumerate(album_songs):
+                if item['songid'] == bookmark.song_id:
+                    offset = max(0.0, bookmark.position)
+                    playlist_pos = idx
+                items.append({
+                    'songid':  item['songid'],
+                })
+            resp = common.json_rpc(
+                'Playlist.Add',
+                playlistid=playlist_id,
+                item=items
+            )
+            self.log('%s' % resp, level=kodi.LOGERROR)
+            player_id = common.get_audio_player_id()
+            self.log('Player ID: %s' % player_id, level=kodi.LOGERROR)
+            if player_id is not None:
+                common.json_rpc(
+                    'Player.GoTo', playerid=player_id, to=playlist_pos)
+                common.json_rpc(
+                    'Player.Seek',
+                    playerid=player_id,
+                    value={
+                        'seconds': int(offset),
+                    },
                 )
-                if offset:
-                    li.setProperty('StartOffset', '{0:.2f}'.format(offset))
-                url = os.path.join(audiobook_dir, item.path)
-                playlist.add(url, li)
-            player = kodi.Player()
-            player.play(playlist)
-        else:
-            self.log('No bookmark ID provided!', level=kodi.LOGERROR)
+            else:
+                p = kodi.Player()
+                p.playselected(playlist_pos)
+
+                # XXX: this is a nasty hack
+                # TODO(naglis): search for alternatives
+                i = 0
+                while i < 10 and not p.isPlaying():
+                    time.sleep(.05)
+                    i += 1
+                p.seekTime(offset)
+                # li = common.prepare_audiofile_listitem(
+                    # audiobook_dir, current.audiobook, item,
+                    # data={'offset': offset}
+                # )
+                # if offset:
+                    # li.setProperty('StartOffset', '{0:.2f}'.format(offset))
+                # url = os.path.join(audiobook_dir, item.path)
+                # playlist.add(url, li)
+            # player = kodi.Player()
+            # player.play(playlist)
+        # else:
+            # self.log('No bookmark ID provided!', level=kodi.LOGERROR)
 
     def mode_remove(self, args):
         audiobook_id = args.get('audiobook_id')
@@ -337,14 +404,16 @@ def main():
     db_filename = common.get_db_path(DB_FILE_NAME)
     database.init(db_filename)
     database.connect()
-    database.create_tables([Audiobook, Audiofile, Bookmark], safe=True)
-    raven = common.LazyRavenClient(
-        common.SENTRY_URL,
-        release=addon.getAddonInfo('version'),
-        enabled_cb=enabled_cb,
-        fail_cb=fail_cb,
-    )
-    with raven, contextlib.closing(database), database.transaction():
+    # database.create_tables([Audiobook, Audiofile, Bookmark], safe=True)
+    database.create_tables([Bookmark], safe=True)
+    # raven = common.LazyRavenClient(
+        # common.SENTRY_URL,
+        # release=addon.getAddonInfo('version'),
+        # enabled_cb=enabled_cb,
+        # fail_cb=fail_cb,
+    # )
+    # with raven, contextlib.closing(database), database.transaction():
+    with  contextlib.closing(database), database.transaction():
         ausis.run(args)
 
 

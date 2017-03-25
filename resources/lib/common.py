@@ -3,7 +3,9 @@ from __future__ import unicode_literals
 
 '''Common Kodi-related constants and functions.'''
 
+import json
 import os
+import random
 import urllib
 
 import xbmc as kodi
@@ -37,6 +39,26 @@ SENTRY_URL = (
     '68747470733a2f2f653532396430633836653434343931336161323263376166633639336'
     '23634313a3937636438383234393265663432393838366534313730376635633035636130'
     '4073656e7472792e696f2f313031383937').decode('hex')
+
+
+def json_rpc(method, **params):
+    values = {
+        'jsonrpc': '2.0',
+        'method': method,
+        'id': random.randint(1, 10000000),
+    }
+    if params:
+        values.update({
+            'params': params,
+        })
+    return json.loads(kodi.executeJSONRPC(json.dumps(values)))
+
+
+def get_audio_player_id():
+    resp = json_rpc('Player.GetActivePlayers')
+    for player in resp.get('result', []):
+        if player.get('type') == 'audio':
+            return player['playerid']
 
 
 def get_db_path(db_name):

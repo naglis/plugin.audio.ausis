@@ -105,12 +105,21 @@ class Audiofile(BaseModel):
 
 
 class Bookmark(BaseModel):
-    audiofile = ForeignKeyField(
-        db_column='audiofile_id',
-        null=True,
-        rel_model=Audiofile,
-        to_field='id',
-        on_delete='CASCADE',
+    # audiofile = ForeignKeyField(
+        # db_column='audiofile_id',
+        # null=True,
+        # rel_model=Audiofile,
+        # to_field='id',
+        # on_delete='CASCADE',
+    # )
+    name = CharField(
+        default='other',
+    )
+    song_id = IntegerField(
+        null=False,
+    )
+    album_id = IntegerField(
+        null=False,
     )
     date_added = DateTimeField(
         null=False, default=datetime.datetime.now,
