@@ -1,131 +1,155 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import datetime
+import collections
 import operator
-import os
-
-from peewee import (
-    CharField,
-    DateTimeField,
-    FloatField,
-    ForeignKeyField,
-    IntegerField,
-    Model,
-    SqliteDatabase,
-    TextField,
-)
-
-import utils
+import sqlite3
+import time
 
 DB_FILE_NAME = 'ausis.sqlite'
 
+BOOKMARK_FIELDS = [
+    'id',
+    'name',
+    'song_id',
+    'album_id',
+    'position',
+    'date_added',
+]
+Bookmark = collections.namedtuple('Bookmark', BOOKMARK_FIELDS)
+
 duration_getter = operator.attrgetter('duration')
-database = SqliteDatabase(None, autocommit=False, pragmas=(
-    ('foreign_keys', 'on'),
-))
+
+SQL_SCHEMA = '''
+CREATE TABLE IF NOT EXISTS bookmark (
+    id INTEGER NOT NULL,
+    name VARCHAR(255),
+    song_id INTEGER NOT NULL,
+    album_id INTEGER NOT NULL,
+    position REAL NOT NULL,
+    date_added INTEGER DEFAULT 0,
+    PRIMARY KEY (id)
+);
+CREATE INDEX IF NOT EXISTS bookmark_name_idx ON bookmark(name);
+CREATE INDEX IF NOT EXISTS bookmark_song_idx ON bookmark(song_id);
+CREATE INDEX IF NOT EXISTS bookmark_album_idx ON bookmark(album_id);
+'''
 
 
-class BaseModel(Model):
-
-    class Meta:
-        database = database
+def bookmark_factory(cursor, row):
+    return Bookmark(*row)
 
 
-class Audiobook(BaseModel):
-    author = CharField()
-    title = CharField(null=False)
-    date_added = DateTimeField(
-        null=False,
-        default=datetime.datetime.now,
-    )
-    cover = CharField(null=True)
-    fanart = CharField(null=True)
-    path = CharField(index=True, unique=True)
+class AusisDatabase(object):
 
-    @property
-    def duration(self):
-        return sum(map(duration_getter, self.audiofiles))
+    SCHEMA = SQL_SCHEMA
 
-    @property
-    def cover_path(self):
-        return os.path.join(self.path, self.cover) if self.cover else None
-
-    @property
-    def fanart_path(self):
-        return os.path.join(self.path, self.fanart) if self.fanart else None
+    def __init__(self, db_path):
+        self._db_path = db_path
+        self._conn = None
+        self._cr = None
 
     @property
-    def bookmarks(self):
-        return (
-            Bookmark.select().where(Bookmark.audiofile_id << self.audiofiles)
-        )
+    def cr(self):
+        return self._cr
 
-    @property
-    def last_played(self):
-        bookmarks = (
-            Bookmark.select().join(Audiofile).join(Audiobook).where(
-                Audiobook.id == self.id
-            )).order_by(Bookmark.date_added.desc()).limit(1)
-        return utils.first_of(bookmarks).date_added if bookmarks else None
+    def initialize(self):
+        self._cr.executescript(self.SCHEMA)
 
-    @staticmethod
-    def from_path(path):
-        results = Audiobook.select().where(Audiobook.path == path)
-        return utils.first_of(results) if results else None
+    def _connect(self):
+        self._conn = sqlite3.connect(self._db_path)
+        self._conn.row_factory = bookmark_factory
+        self._cr = self._conn.cursor()
 
+    def __enter__(self):
+        self._connect()
+        self.initialize()
+        return self
 
-class Audiofile(BaseModel):
-    audiobook = ForeignKeyField(
-        db_column='audiobook_id',
-        null=False,
-        rel_model=Audiobook,
-        to_field='id',
-        on_delete='CASCADE',
-        related_name='audiofiles',
-    )
-    title = CharField(null=True)
-    duration = IntegerField(null=True, default=0)
-    file_path = CharField(null=False)
-    sequence = IntegerField()
-    size = IntegerField(null=True, default=0)
+    def __exit__(self, exc_class, exc, traceback):
+        if any((exc_class, exc)):
+            self._conn.rollback()
+        else:
+            self._conn.commit()
+        self._conn.close()
 
-    class Meta:
-        order_by = ('sequence',)
+    def add_bookmark(self, name, song_id, album_id, position):
+        bookmark = None
+        q = '''
+        SELECT
+            *
+        FROM
+            bookmark
+        WHERE
+            name = :name
+        AND
+            song_id = :song_id
+        AND
+            album_id = :album_id
+        ;'''
+        self.cr.execute(q, locals())
+        bookmark = self.cr.fetchone()
 
-    @property
-    def path(self):
-        return os.path.join(self.audiobook.path, self.file_path)
+        now = int(time.time())
+        if bookmark:
+            q = '''
+            UPDATE
+                bookmark
+            SET
+                position = :position,
+                date_added = :date_added
+            WHERE
+                id = :id
+            ;'''
+            self.cr.execute(q, {
+                'id': bookmark.id,
+                'position': position,
+                'date_added': now,
+            })
+            return bookmark.id
 
-    def get_remaining(self):
-        return Audiofile.select().where(
-            (Audiofile.audiobook_id == self.audiobook_id) &
-            (Audiofile.sequence >= self.sequence)
-        )
+        query = '''
+        INSERT INTO bookmark (
+            name,
+            song_id,
+            album_id,
+            position,
+            date_added
+        ) VALUES (
+            :name,
+            :song_id,
+            :album_id,
+            :position,
+            :now
+        );'''
+        self.cr.execute(query, locals())
+        return self.cr.lastrowid
 
+    def get_all_bookmarks(self):
+        self.cr.execute('SELECT * FROM bookmark;')
+        return self.cr.fetchall()
 
-class Bookmark(BaseModel):
-    # audiofile = ForeignKeyField(
-        # db_column='audiofile_id',
-        # null=True,
-        # rel_model=Audiofile,
-        # to_field='id',
-        # on_delete='CASCADE',
-    # )
-    name = CharField(
-        default='other',
-    )
-    song_id = IntegerField(
-        null=False,
-    )
-    album_id = IntegerField(
-        null=False,
-    )
-    date_added = DateTimeField(
-        null=False, default=datetime.datetime.now,
-    )
-    position = FloatField(null=False, default=0.0)
+    def get_bookmark(self, bookmark_id):
+        query = '''
+        SELECT
+            *
+        FROM
+            bookmark
+        WHERE
+            id = :bookmark_id
+        ;'''
+        self.cr.execute(query, locals())
+        result = self.cr.fetchone()
+        return result if result else None
 
-
-if __name__ == '__main__':
-    a = ''
+    def get_album_bookmarks(self, album_id):
+        query = '''
+        SELECT
+            *
+        FROM
+            bookmark
+        WHERE
+            album_id = :album_id
+        ;'''
+        self.cr.execute(query, locals())
+        return self.cr.fetchall()

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import contextlib
 import operator
 import sys
 import time
@@ -13,9 +12,8 @@ import xbmcplugin as kodiplugin
 
 from resources.lib import common, utils
 from resources.lib.db import (
-    Bookmark,
+    AusisDatabase,
     DB_FILE_NAME,
-    database,
 )
 
 by_file = operator.itemgetter('file')
@@ -38,8 +36,13 @@ class Ausis(common.KodiPlugin):
         'remove': 30018,
     }
 
-    def __init__(self, base_url, handle, addon):
+    def __init__(self, base_url, handle, addon, db):
         super(Ausis, self).__init__(base_url, handle, addon)
+        self._db = db
+
+    @property
+    def db(self):
+        return self._db
 
     def _prepare_bookmark_listitem(self, string_id, bookmark):
         url = self._build_url(mode='resume', bookmark_id=bookmark.id)
@@ -52,7 +55,9 @@ class Ausis(common.KodiPlugin):
         return dict(handle=self._handle, url=url, listitem=li, isFolder=False)
 
     def mode_main(self, args):
-        for bookmark in Bookmark.select():
+        bms = self.db.get_all_bookmarks()
+        self.log('%s' % bms, level=kodi.LOGERROR)
+        for bookmark in bms:
             url = self._build_url(
                 mode='resume', bookmark_id=bookmark.id)
             song_info = common.json_rpc(
@@ -60,7 +65,6 @@ class Ausis(common.KodiPlugin):
                     'artist', 'title', 'duration', 'thumbnail', 'album']).get('result', {}).get('songdetails', {})
             if not song_info:
                 continue
-            self.log('%s' % song_info, level=kodi.LOGERROR)
 
             li = kodigui.ListItem(
                 u'{album} - {title} [{bookmark.name}] ({bookmark.position}s)'.format(
@@ -160,7 +164,7 @@ class Ausis(common.KodiPlugin):
     def mode_resume(self, args):
         bookmark_id = args.get('bookmark_id')
         if bookmark_id:
-            bookmark = Bookmark.get(Bookmark.id == bookmark_id)
+            bookmark = self.db.get_bookmark(bookmark_id)
             if not bookmark:
                 return
             album_songs = sorted(common.json_rpc(
@@ -241,25 +245,11 @@ class Ausis(common.KodiPlugin):
 def main():
     addon = kodiaddon.Addon(id='plugin.audio.ausis')
     base_url, handle = sys.argv[0], int(sys.argv[1])
-    ausis = Ausis(base_url, handle, addon)
-
-    def enabled_cb():
-        '''Callback to check if crash reports are enabled.'''
-        return addon.getSetting('send_crash_reports').lower() == 'true'
-
-    def fail_cb(msg=None):
-        '''Callback for when sending the crash report to Sentry fails.'''
-        if msg:
-            ausis.log(msg, level=kodi.LOGERROR)
 
     args = utils.parse_query(sys.argv[2][1:])
     db_filename = common.get_db_path(DB_FILE_NAME)
-    database.init(db_filename)
-    database.connect()
-    database.create_tables([Bookmark], safe=True)
-
-    with  contextlib.closing(database), database.transaction():
-        ausis.run(args)
+    with AusisDatabase(db_filename) as db:
+        Ausis(base_url, handle, addon, db).run(args)
 
 
 if __name__ == '__main__':

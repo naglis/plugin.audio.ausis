@@ -7,9 +7,8 @@ import xbmc as kodi
 
 from resources.lib import common
 from resources.lib.db import (
-    Bookmark,
+    AusisDatabase,
     DB_FILE_NAME,
-    database,
 )
 
 DB_PATH = common.get_db_path(DB_FILE_NAME)
@@ -66,16 +65,11 @@ class AudioBookPlayer(kodi.Player):
             # if not audiofile_id:
                 # return
             # position = offset + position
-            with database.transaction():
-                # bookmark = Bookmark.create(
-                    # audiofile_id=audiofile_id, position=position)
-                bookmark = Bookmark.create(
-                    name=name,
-                    album_id=album_id,
-                    song_id=song_id,
-                    position=position)
+            with AusisDatabase(DB_PATH) as db:
+                bookmark_id = db.add_bookmark(
+                    name, song_id, album_id, position)
                 kodi.log('Added bookmark: %d at: %s' % (
-                    bookmark.id, position))
+                    bookmark_id, position))
 
     def onPlayBackStarted(self):
         self._bookmark('started')
@@ -97,9 +91,6 @@ class AudioBookPlayer(kodi.Player):
 
 
 def main():
-    database.init(DB_PATH)
-    database.connect()
-    database.create_tables([Bookmark], True)
     monitor = kodi.Monitor()
     player = AudioBookPlayer()  # noqa
 

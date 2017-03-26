@@ -2,8 +2,6 @@
 <addon id="plugin.audio.ausis" name="ausis" version="0.1.3" provider-name="Naglis Jonaitis">
     <requires>
         <import addon="xbmc.python" version="2.25.0"/>
-        <import addon="xbmc.addon" version="16.9.701"/>
-        <import addon="script.module.peewee" version="2.8.3"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="addon.py">
         <provides>audio</provides>
