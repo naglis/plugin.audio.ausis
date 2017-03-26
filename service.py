@@ -47,7 +47,7 @@ class AudioBookPlayer(kodi.Player):
             current = get_current_id()
             if not current:
                 return
-            song_id, album_id = operator.itemgetter('id', 'albumid')(current)
+            song_id, album_id = map(current.get, ('id', 'albumid'))
             if not (song_id and album_id):
                 return
             kodi.log('%s' % current)
