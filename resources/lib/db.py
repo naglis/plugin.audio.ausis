@@ -74,39 +74,38 @@ class AusisDatabase(object):
         self._conn.close()
 
     def add_bookmark(self, name, song_id, album_id, position):
-        bookmark = None
-        q = '''
-        SELECT
-            *
-        FROM
-            bookmark
-        WHERE
-            name = :name
-        AND
-            song_id = :song_id
-        AND
-            album_id = :album_id
-        ;'''
-        self.cr.execute(q, locals())
-        bookmark = self.cr.fetchone()
-
         now = int(time.time())
-        if bookmark:
+        if name == 'started':
+            bookmark = None
             q = '''
-            UPDATE
+            SELECT
+                *
+            FROM
                 bookmark
-            SET
-                position = :position,
-                date_added = :date_added
             WHERE
-                id = :id
+                name = :name
+            AND
+                song_id = :song_id
+            AND
+                album_id = :album_id
             ;'''
-            self.cr.execute(q, {
-                'id': bookmark.id,
-                'position': position,
-                'date_added': now,
-            })
-            return bookmark.id
+            self.cr.execute(q, locals())
+            bookmark = self.cr.fetchone()
+
+            if bookmark:
+                q = '''
+                UPDATE
+                    bookmark
+                SET
+                    date_added = :date_added
+                WHERE
+                    id = :id
+                ;'''
+                self.cr.execute(q, {
+                    'id': bookmark.id,
+                    'date_added': now,
+                })
+                return bookmark.id
 
         query = '''
         INSERT INTO bookmark (
@@ -124,6 +123,20 @@ class AusisDatabase(object):
         );'''
         self.cr.execute(query, locals())
         return self.cr.lastrowid
+
+    def get_albums(self):
+        query = '''
+        SELECT
+            *
+        FROM
+            bookmark
+        GROUP BY
+            album_id
+        ORDER BY
+            date_added DESC
+        ;
+        '''
+        return self.cr.execute(query).fetchall()
 
     def get_all_bookmarks(self):
         self.cr.execute('SELECT * FROM bookmark;')
@@ -150,6 +163,8 @@ class AusisDatabase(object):
             bookmark
         WHERE
             album_id = :album_id
+        ORDER BY
+            date_added DESC
         ;'''
         self.cr.execute(query, locals())
         return self.cr.fetchall()

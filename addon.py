@@ -54,20 +54,31 @@ class Ausis(common.KodiPlugin):
         )
         return dict(handle=self._handle, url=url, listitem=li, isFolder=False)
 
-    def mode_main(self, args):
-        bms = self.db.get_all_bookmarks()
-        self.log('%s' % bms, level=kodi.LOGERROR)
-        for bookmark in bms:
+    def mode_album_bookmarks(self, args):
+        album_id = args.get('album_id')
+        if album_id is None:
+            return
+        bookmarks = self.db.get_album_bookmarks(album_id)
+
+        for bookmark in bookmarks:
             url = self._build_url(
                 mode='resume', bookmark_id=bookmark.id)
             song_info = common.json_rpc(
-                'AudioLibrary.GetSongDetails', songid=bookmark.song_id, properties=[
-                    'artist', 'title', 'duration', 'thumbnail', 'album']).get('result', {}).get('songdetails', {})
+                'AudioLibrary.GetSongDetails',
+                songid=bookmark.song_id,
+                properties=[
+                    'artist',
+                    'title',
+                    'duration',
+                    'thumbnail',
+                    'album',
+                ],
+            ).get('result', {}).get('songdetails', {})
             if not song_info:
                 continue
 
             li = kodigui.ListItem(
-                u'{album} - {title} [{bookmark.name}] ({bookmark.position}s)'.format(
+                u'[{bookmark.name}] {title} ({bookmark.position}s)'.format(
                     bookmark=bookmark, **song_info),
                 iconImage=song_info.get('thumbnail'),
             )
@@ -98,6 +109,73 @@ class Ausis(common.KodiPlugin):
                 url=url,
                 listitem=li,
                 isFolder=False,
+                # totalItems=total_books,
+            )
+        kodiplugin.endOfDirectory(self._handle)
+
+    def mode_main(self, args):
+        # bms = self.db.get_all_bookmarks()
+        albums = self.db.get_albums()
+        self.log('%s' % albums)
+        for bookmark in albums:
+            # url = self._build_url(
+                # mode='album_bookmarks', bookmark_id=bookmark.id)
+            url = self._build_url(
+                mode='album_bookmarks', album_id=bookmark.album_id)
+            album_info = common.json_rpc(
+                'AudioLibrary.GetAlbumDetails',
+                albumid=bookmark.album_id,
+                properties=[
+                    'title',
+                    'artist',
+                    'fanart',
+                    'thumbnail',
+                    'dateadded',
+                ],
+            ).get('result', {}).get('albumdetails', {})
+            self.log('%s' % album_info)
+            if not album_info:
+                return
+            # song_info = common.json_rpc(
+                # 'AudioLibrary.GetSongDetails', songid=bookmark.song_id, properties=[
+                    # 'artist', 'title', 'duration', 'thumbnail', 'album']).get('result', {}).get('songdetails', {})
+            # if not song_info:
+                # continue
+
+            li = kodigui.ListItem(
+                album_info['title'],
+                # u'{album} - {title} [{bookmark.name}] ({bookmark.position}s)'.format(
+                    # bookmark=bookmark, **song_info),
+                # iconImage=song_info.get('thumbnail'),
+                iconImage=album_info.get('thumbnail'),
+            )
+            li.setInfo('music', {
+                # 'duration': song_info.get('duration', 0),
+                'artist': u', '.join(album_info.get('artist', [])),
+                # 'album': song_info.get('album'),
+                'genre': 'Audiobook',
+            })
+            # last_played = utils.parse_datetime_str(audiobook.date_last_played)
+            # li.setInfo('video', {
+                # 'dateadded': audiobook.date_added.strftime(
+                    # common.DATETIME_FORMAT),
+                # 'lastplayed': last_played.strftime(
+                    # common.DATETIME_FORMAT) if last_played else None,
+            # })
+            # if audiobook.fanart:
+                # li.setProperty(
+                    # 'Fanart_Image',
+                    # os.path.join(directory, audiobook.fanart_path),
+                # )
+            # li.addContextMenuItems([
+                # (self._t('remove'), 'RunPlugin(%s)' % self._build_url(
+                    # mode='remove', audiobook_id=audiobook.id)),
+            # ])
+            kodiplugin.addDirectoryItem(
+                handle=self._handle,
+                url=url,
+                listitem=li,
+                isFolder=True,
                 # totalItems=total_books,
             )
         kodiplugin.endOfDirectory(self._handle)
@@ -204,9 +282,9 @@ class Ausis(common.KodiPlugin):
                 playlistid=playlist_id,
                 item=items
             )
-            self.log('%s' % resp, level=kodi.LOGERROR)
+            self.log('%s' % resp)
             player_id = common.get_audio_player_id()
-            self.log('Player ID: %s' % player_id, level=kodi.LOGERROR)
+            self.log('Player ID: %s' % player_id)
             if player_id is not None:
                 common.json_rpc(
                     'Player.GoTo', playerid=player_id, to=playlist_pos)

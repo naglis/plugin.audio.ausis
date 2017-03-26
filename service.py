@@ -24,7 +24,7 @@ def get_current_id():
                 'albumid',
             ],
         )
-        kodi.log('%s' % resp, level=kodi.LOGERROR)
+        kodi.log('%s' % resp)
         return resp.get('result', {}).get('item', {})
 
 
@@ -40,22 +40,17 @@ class AudioBookPlayer(kodi.Player):
         playing audiofile.
         '''
         try:
-            # current = self.getMusicInfoTag()
             if name == 'started':
                 position = 0.0
             else:
                 position = self.getTime()
-            # track_url = current.getURL()
             current = get_current_id()
             if not current:
                 return
             song_id, album_id = operator.itemgetter('id', 'albumid')(current)
-            # song_info = common.json_rpc(
-                # 'AudioLibrary.GetSongDetails', songid=song_id, properties=[
-                    # 'albumid']).get('result', {}).get('songdetails', {})
             if not (song_id and album_id):
                 return
-            kodi.log('%s' % current, level=kodi.LOGERROR)
+            kodi.log('%s' % current)
         except RuntimeError:
             kodi.log('Runtime error')
         else:
