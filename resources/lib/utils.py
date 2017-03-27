@@ -1,19 +1,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import base64
 import datetime
-import json
 import operator
-import re
 import urlparse
 
 
-IMAGE_EXTENSIONS = ('jpg', 'jpeg', 'png')
-AUDIO_EXTENSIONS = ('mp3', 'ogg', 'opus', 'm4a', 'm4b')
-COVER_FILENAMES = (r'cover', r'folder', r'cover[\s_-]?art')
-FANART_FILENAMES = (r'fan[\s_-]?art',)
-IGNORE_FILENAME = b'.ausis_ignore'
 SQLITE_DATETIME_FORMATS = (
     '%Y-%m-%d %H:%M:%S',
     '%Y-%m-%d %H:%M:%S.%f',
@@ -43,14 +35,6 @@ def encode_values(d):
     return dict([(encode_arg(k), encode_arg(v)) for k, v in d.iteritems()])
 
 
-def dump_data(data):
-    return base64.b64encode(json.dumps(data)) if data else ''
-
-
-def load_data(s):
-    return json.loads(base64.b64decode(s)) if s else {}
-
-
 def parse_query(query, defaults=None):
     if defaults is None:
         defaults = {}
@@ -63,31 +47,6 @@ def parse_query(query, defaults=None):
         else:
             d[decode_arg(key)] = map(decode_arg, values)
     return d
-
-
-def make_regex_filename_matcher(filenames=None, extensions=None):
-    if extensions is None:
-        extensions = ('[a-z0-9]+',)
-    if filenames is None:
-        filenames = ('.+',)
-    pattern = re.compile(r'(?i)^(%s)\.(%s)$' % (
-        '|'.join(filenames), '|'.join(extensions)))
-
-    def matcher(fn):
-        return pattern.match(fn) is not None
-
-    return matcher
-
-
-audiofile_matcher = make_regex_filename_matcher(extensions=AUDIO_EXTENSIONS)
-cover_matcher = make_regex_filename_matcher(
-    filenames=COVER_FILENAMES, extensions=IMAGE_EXTENSIONS)
-fanart_matcher = make_regex_filename_matcher(
-    filenames=FANART_FILENAMES, extensions=IMAGE_EXTENSIONS)
-
-
-def ignore_matcher(fn):
-    return fn == IGNORE_FILENAME
 
 
 def format_duration(s):

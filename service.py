@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import operator
-
 import xbmc as kodi
 
 from resources.lib import common

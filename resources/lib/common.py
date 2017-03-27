@@ -35,7 +35,7 @@ AUDIOBOOK_SORT_METHODS = (
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 
-def json_rpc(method, **params):
+def json_rpc(method, raise_error=False, **params):
     values = {
         'jsonrpc': '2.0',
         'method': method,
@@ -64,16 +64,6 @@ def italic(s):
     return '[I]{0:}[/I]'.format(s)
 
 
-def parse_comment(comment):
-    if comment.startswith('ausis:'):
-        return utils.load_data(comment[len('ausis:'):])
-    return {}
-
-
-def dump_comment(data):
-    return 'ausis:{0:s}'.format(utils.dump_data(data))
-
-
 class KodiPlugin(object):
 
     _strings = {}
@@ -96,13 +86,9 @@ class KodiPlugin(object):
         return self._addon.getLocalizedString(string_id)
 
     def log(self, msg, level=kodi.LOGDEBUG):
-        log_enabled = (
-            self._addon.getSetting('logging_enabled').lower() == 'true' or not
-            level == kodi.LOGDEBUG)
-        if log_enabled:
-            msg = ('%s: %s' % (
-                self._addon.getAddonInfo('id'), msg)).encode('utf-8')
-            kodi.log(msg=msg, level=level)
+        msg = ('%s: %s' % (
+            self._addon.getAddonInfo('id'), msg)).encode('utf-8')
+        kodi.log(msg=msg, level=level)
 
     def run(self, args):
         mode = args.get('mode') or 'main'
@@ -135,7 +121,6 @@ def prepare_audiofile_listitem(audiobook_dir, audiobook, item, data=None):
         'artist': audiobook.author,
         'title': item.title,
         'genre': 'Audiobook',
-        'comment': dump_comment(d),
         'size': item.size,
         'count': item.sequence,
     })

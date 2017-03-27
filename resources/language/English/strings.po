@@ -11,63 +11,19 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 msgctxt "#30000"
-msgid "Configuration required"
-msgstr ""
-
-msgctxt "#30001"
-msgid "The audiobook directory is not set!"
-msgstr ""
-
-msgctxt "#30002"
 msgid "General"
 msgstr ""
 
-msgctxt "#30003"
-msgid "Advanced"
-msgstr ""
-
-msgctxt "#30004"
+msgctxt "#30001"
 msgid "Audiobook directory"
-msgstr ""
-
-msgctxt "#30005"
-msgid "Enable debug logging"
-msgstr ""
-
-msgctxt "#30006"
-msgid "Scan now"
-msgstr ""
-
-msgctxt "#30007"
-msgid "Scanning your audiobook directory"
 msgstr ""
 
 msgctxt "#30008"
 msgid "ausis"
 msgstr ""
 
-msgctxt "#30009"
-msgid "The audiobook directory is configured, but there are no audiobooks in the library yet."
-msgstr ""
-
-msgctxt "#30010"
-msgid "Would you like to scan the audiobook directory now?"
-msgstr ""
-
-msgctxt "#30011"
-msgid "Yes"
-msgstr ""
-
-msgctxt "#30012"
-msgid "No"
-msgstr ""
-
 msgctxt "#30013"
 msgid "Resume latest: %s (%s)"
-msgstr ""
-
-msgctxt "#30014"
-msgid "Unknown author"
 msgstr ""
 
 msgctxt "#30015"

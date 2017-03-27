@@ -22,14 +22,10 @@ by_file = operator.itemgetter('file')
 class Ausis(common.KodiPlugin):
 
     _strings = {
-        'need_config': 30000,
-        'dir_not_set': 30001,
         'ausis': 30008,
-        'library_empty_msg': 30009,
         'yes': 30011,
         'no': 30012,
         'resume_latest': 30013,
-        'unknown_author': 30014,
         'resume_furthest': 30015,
         'remove_confirm_msg': 30016,
         'are_you_sure': 30017,
@@ -302,7 +298,7 @@ class Ausis(common.KodiPlugin):
                 # XXX: this is a nasty hack
                 # TODO(naglis): search for alternatives
                 i = 0
-                while i < 10 and not p.isPlaying():
+                while i < 20 and not p.isPlaying():
                     time.sleep(.05)
                     i += 1
                 p.seekTime(offset)
