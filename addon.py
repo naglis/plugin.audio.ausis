@@ -74,8 +74,10 @@ class Ausis(common.KodiPlugin):
                 continue
 
             li = kodigui.ListItem(
-                u'[{bookmark.name}] {title} ({bookmark.position}s)'.format(
-                    bookmark=bookmark, **song_info),
+                u'[{bookmark.name}] {title} ({position})'.format(
+                    position=utils.format_duration(bookmark.position),
+                    bookmark=bookmark,
+                    **song_info),
                 iconImage=song_info.get('thumbnail'),
             )
             li.setInfo('music', {
