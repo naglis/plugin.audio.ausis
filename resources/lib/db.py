@@ -36,30 +36,22 @@ CREATE INDEX IF NOT EXISTS bookmark_album_idx ON bookmark(album_id);
 '''
 
 
-def bookmark_factory(cursor, row):
-    return Bookmark(*row)
+def wrap_bookmark(results):
+    if results is None:
+        return
+    if isinstance(results, tuple):
+        return Bookmark(*results)
+    return [Bookmark(*r) for r in results]
 
 
-class AusisDatabase(object):
+class Database(object):
 
-    SCHEMA = SQL_SCHEMA
+    SCHEMA = None
 
     def __init__(self, db_path):
         self._db_path = db_path
         self._conn = None
         self._cr = None
-
-    @property
-    def cr(self):
-        return self._cr
-
-    def initialize(self):
-        self._cr.executescript(self.SCHEMA)
-
-    def _connect(self):
-        self._conn = sqlite3.connect(self._db_path)
-        self._conn.row_factory = bookmark_factory
-        self._cr = self._conn.cursor()
 
     def __enter__(self):
         self._connect()
@@ -72,6 +64,22 @@ class AusisDatabase(object):
         else:
             self._conn.commit()
         self._conn.close()
+
+    def _connect(self):
+        self._conn = sqlite3.connect(self._db_path)
+        self._cr = self._conn.cursor()
+
+    @property
+    def cr(self):
+        return self._cr
+
+    def initialize(self):
+        self._cr.executescript(self.SCHEMA)
+
+
+class AusisDatabase(Database):
+
+    SCHEMA = SQL_SCHEMA
 
     def add_bookmark(self, name, song_id, album_id, position):
         now = int(time.time())
@@ -90,7 +98,7 @@ class AusisDatabase(object):
                 album_id = :album_id
             ;'''
             self.cr.execute(q, locals())
-            bookmark = self.cr.fetchone()
+            bookmark = wrap_bookmark(self.cr.fetchone())
 
             if bookmark:
                 q = '''
@@ -134,13 +142,12 @@ class AusisDatabase(object):
             album_id
         ORDER BY
             date_added DESC
-        ;
-        '''
-        return self.cr.execute(query).fetchall()
+        ;'''
+        return wrap_bookmark(self.cr.execute(query).fetchall())
 
     def get_all_bookmarks(self):
-        self.cr.execute('SELECT * FROM bookmark;')
-        return self.cr.fetchall()
+        return wrap_bookmark(
+            self.cr.execute('SELECT * FROM bookmark;').fetchall())
 
     def get_bookmark(self, bookmark_id):
         query = '''
@@ -152,7 +159,7 @@ class AusisDatabase(object):
             id = :bookmark_id
         ;'''
         self.cr.execute(query, locals())
-        result = self.cr.fetchone()
+        result = wrap_bookmark(self.cr.fetchone())
         return result if result else None
 
     def get_album_bookmarks(self, album_id):
@@ -166,5 +173,4 @@ class AusisDatabase(object):
         ORDER BY
             date_added DESC
         ;'''
-        self.cr.execute(query, locals())
-        return self.cr.fetchall()
+        return wrap_bookmark(self.cr.execute(query, locals()).fetchall())
