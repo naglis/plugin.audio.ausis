@@ -78,26 +78,22 @@ class TestAusisDatabase(unittest.TestCase):
                 )
 
     def test_add_bookmark(self):
-        data = BOOKMARK_DATA[0]
+        bookmark = BOOKMARK_DATA[0]
+        data = bookmark[1:-1]
         with self.db as db:
-            bookmark_id = db.add_bookmark(*data[1:-1])
-            bookmark = database.wrap_bookmark(db.cr.execute('''
-            SELECT
-                *
-            FROM
-                bookmark
-            WHERE
-                id = :bookmark_id
-            ;''', locals()).fetchone())
-            self.assertEqual(data.song_id, bookmark.song_id)
-            self.assertEqual(data.album_id, bookmark.album_id)
-            self.assertEqual(data.position, bookmark.position)
+            bookmark_id = db.add_bookmark(*data)
+            new_bookmark = database.wrap_bookmark(db.cr.execute(
+                'SELECT * FROM bookmark WHERE id = :bookmark_id;', locals()
+                ).fetchone())
+            self.assertEqual(bookmark.song_id, new_bookmark.song_id)
+            self.assertEqual(bookmark.album_id, new_bookmark.album_id)
+            self.assertEqual(bookmark.position, new_bookmark.position)
 
     def test_add_bookmark_update_same_id(self):
-        data = BOOKMARK_DATA[0]
+        data = BOOKMARK_DATA[0][1:-1]
         with self.db as db:
-            bookmark_id1 = db.add_bookmark(*data[1:-1])
-            bookmark_id2 = db.add_bookmark(*data[1:-1])
+            bookmark_id1 = db.add_bookmark(*data)
+            bookmark_id2 = db.add_bookmark(*data)
             self.assertEqual(bookmark_id1, bookmark_id2)
 
     def test_get_albums(self):
@@ -115,9 +111,9 @@ class TestAusisDatabase(unittest.TestCase):
             self.assertEqual(len(album_bookmarks), 3)
 
     def test_get_bookmark(self):
-        data = BOOKMARK_DATA[0]
+        data = BOOKMARK_DATA[0][1:-1]
         with self.db as db:
-            bookmark_id = db.add_bookmark(*data[1:-1])
+            bookmark_id = db.add_bookmark(*data)
             self.assertTrue(db.get_bookmark(bookmark_id))
 
     def test_get_album_bookmarks(self):
