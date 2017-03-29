@@ -12,7 +12,7 @@ from resources.lib.db import (
 DB_PATH = common.get_db_path(DB_FILE_NAME)
 
 
-def get_current_id():
+def get_current_info():
     player_id = common.get_audio_player_id()
     if player_id is not None:
         resp = common.json_rpc(
@@ -29,6 +29,14 @@ def get_current_id():
 class AudioBookPlayer(kodi.Player):
     '''Customized player which stores bookmarks.'''
 
+    def _get_offset(self):
+        try:
+            info = self.getMusicInfoTag()
+            extra_data = common.parse_comment(info.getComment() or '')
+            return extra_data.get('offset') or 0.0
+        except RuntimeError:
+            return 0.0
+
     def _bookmark(self, name='other'):
         '''
         Adds a bookmark on the currently playing audiofile.
@@ -42,25 +50,20 @@ class AudioBookPlayer(kodi.Player):
                 position = 0.0
             else:
                 position = self.getTime()
-            current = get_current_id()
+            current = get_current_info()
             if not current:
                 return
             song_id, album_id = map(current.get, ('id', 'albumid'))
             if not (song_id and album_id):
                 return
             kodi.log('%s' % current)
+            offset = self._get_offset()
         except RuntimeError:
             kodi.log('Runtime error')
         else:
-            # data = common.parse_comment(current.getComment())
-            # audiofile_id, offset = data.get('item'), data.get('offset') or 0
-            # kodi.log('Event at: %s with item: %s' % (position, track_url))
-            # if not audiofile_id:
-                # return
-            # position = offset + position
             with AusisDatabase(DB_PATH) as db:
                 bookmark_id = db.add_bookmark(
-                    name, song_id, album_id, position)
+                    name, song_id, album_id, offset + position)
                 kodi.log('Added bookmark: %d at: %s' % (
                     bookmark_id, position))
 

@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import base64
 import datetime
+import json
 import operator
 import urlparse
 
@@ -33,6 +35,14 @@ def encode_arg(arg):
 def encode_values(d):
     '''Given a dict d, returns a new dict with encoded keys and values.'''
     return dict([(encode_arg(k), encode_arg(v)) for k, v in d.iteritems()])
+
+
+def dump_data(data):
+    return base64.b64encode(json.dumps(data)) if data else ''
+
+
+def load_data(s):
+    return json.loads(base64.b64decode(s)) if s else {}
 
 
 def parse_query(query, defaults=None):

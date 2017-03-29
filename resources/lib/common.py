@@ -64,6 +64,16 @@ def italic(s):
     return '[I]{0:}[/I]'.format(s)
 
 
+def parse_comment(comment):
+    if comment.startswith('ausis:'):
+        return utils.load_data(comment[len('ausis:'):])
+    return {}
+
+
+def dump_comment(data):
+    return 'ausis:{0:s}'.format(utils.dump_data(data))
+
+
 class KodiPlugin(object):
 
     _strings = {}
@@ -102,28 +112,23 @@ class KodiPlugin(object):
             )
 
 
-def prepare_audiofile_listitem(audiobook_dir, audiobook, item, data=None):
+def prepare_audiofile_listitem(item, data=None):
     data = {} if data is None else data
     d = {
         'item': item.id,
     }
     d.update(data)
-    cover, fanart = None, None
-    if audiobook.cover:
-        cover = os.path.join(audiobook_dir, audiobook.cover_path)
-    if audiobook.fanart:
-        fanart = os.path.join(audiobook_dir, audiobook.fanart_path)
     li = kodigui.ListItem(item.title)
-    li.setInfo('music', {
-        'tracknumber': item.sequence,
-        'duration': item.duration,
-        'album': audiobook.title,
-        'artist': audiobook.author,
-        'title': item.title,
-        'genre': 'Audiobook',
-        'size': item.size,
-        'count': item.sequence,
-    })
+    # li.setInfo('music', {
+        # 'tracknumber': item.sequence,
+        # 'duration': item.duration,
+        # 'album': audiobook.title,
+        # 'artist': audiobook.author,
+        # 'title': item.title,
+        # 'genre': 'Audiobook',
+        # 'size': item.size,
+        # 'count': item.sequence,
+    # })
     li.setArt({
         'thumb': cover,
         'icon': cover,

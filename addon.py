@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 
 import operator
 import sys
-import time
 
 import xbmc as kodi
 import xbmcaddon as kodiaddon
@@ -22,13 +21,14 @@ by_file = operator.itemgetter('file')
 class Ausis(common.KodiPlugin):
 
     _strings = {
-        'ausis': 30008,
-        'yes': 30011,
-        'no': 30012,
+        'remove_bookmarks': 30002,
+        'ausis': 30003,
+        'remove_confirm_msg': 30004,
+        'are_you_sure': 30005,
+        'yes': 30006,
+        'no': 30007,
         'resume_latest': 30013,
         'resume_furthest': 30015,
-        'remove_confirm_msg': 30016,
-        'are_you_sure': 30017,
         'remove': 30018,
     }
 
@@ -153,6 +153,15 @@ class Ausis(common.KodiPlugin):
                 # 'album': song_info.get('album'),
                 'genre': 'Audiobook',
             })
+            li.addContextMenuItems([
+                (
+                    self._t('remove_bookmarks'),
+                    'RunPlugin(%s)' % self._build_url(
+                        mode='remove_album_bookmarks',
+                        album_id=bookmark.album_id,
+                    ),
+                ),
+            ])
             # last_played = utils.parse_datetime_str(audiobook.date_last_played)
             # li.setInfo('video', {
                 # 'dateadded': audiobook.date_added.strftime(
@@ -245,77 +254,61 @@ class Ausis(common.KodiPlugin):
                 return
             album_songs = sorted(common.json_rpc(
                 'AudioLibrary.GetSongs',
+                # TODO(naglis): add more fields
                 properties=[
                     'file',
+                    'artist',
+                    'title',
+                    'duration',
+                    'year',
                 ],
                 filter={
                     'albumid': bookmark.album_id,
                 },
             ).get('result', {}).get('songs', []), key=by_file)
+            self.log('%s' % album_songs)
 
-            # filtered = []
-            # found = False
-            # for song in album_songs:
-                # if song['songid'] == bookmark.song_id:
-                    # found = True
-                # if found:
-                    # filtered.append(song)
-
-
-            # current = bookmark.audiofile
             playlist = kodi.PlayList(kodi.PLAYLIST_MUSIC)
             playlist.clear()
-            playlist_id = playlist.getPlayListId()
-            playlist_pos, offset = -1, 0
-            items = []
+
+            playlist_pos, offset = -1, -1
             for idx, item in enumerate(album_songs):
                 if item['songid'] == bookmark.song_id:
                     offset = max(0.0, bookmark.position)
                     playlist_pos = idx
-                items.append({
-                    'songid':  item['songid'],
+                li = kodigui.ListItem(item.get('title', ''))
+                # TODO(naglis): add more fields
+                # TODO(naglis): make nicer
+                li.setInfo('music', {
+                    'comment': common.dump_comment({'offset': offset}),
+                    'year': item.get('year'),
+                    'artist': u'\n'.join(item.get('artist', [])),
+                    'duration': item.get('duration'),
+                    'title': item.get('title'),
                 })
-            resp = common.json_rpc(
-                'Playlist.Add',
-                playlistid=playlist_id,
-                item=items
-            )
-            self.log('%s' % resp)
-            player_id = common.get_audio_player_id()
-            self.log('Player ID: %s' % player_id)
-            if player_id is not None:
-                common.json_rpc(
-                    'Player.GoTo', playerid=player_id, to=playlist_pos)
-                common.json_rpc(
-                    'Player.Seek',
-                    playerid=player_id,
-                    value={
-                        'seconds': int(offset),
-                    },
-                )
-            else:
-                p = kodi.Player()
-                p.playselected(playlist_pos)
+                if offset > 0.0:
+                    li.setProperty('StartOffset', '{0:.2f}'.format(offset))
+                playlist.add(item['file'], li)
 
-                # XXX: this is a nasty hack
-                # TODO(naglis): search for alternatives
-                i = 0
-                while i < 20 and not p.isPlaying():
-                    time.sleep(.05)
-                    i += 1
-                p.seekTime(offset)
-                # li = common.prepare_audiofile_listitem(
-                    # audiobook_dir, current.audiobook, item,
-                    # data={'offset': offset}
-                # )
-                # if offset:
-                    # li.setProperty('StartOffset', '{0:.2f}'.format(offset))
-                # url = os.path.join(audiobook_dir, item.path)
-                # playlist.add(url, li)
-            # player = kodi.Player()
-            # player.play(playlist)
-        # else:
-            # self.log('No bookmark ID provided!', level=kodi.LOGERROR)
+            kodi.Player().play(playlist, startpos=playlist_pos)
+
+    def mode_remove_album_bookmarks(self, args):
+        album_id = args.get('album_id')
+
+        if album_id:
+            dialog = kodigui.Dialog()
+            confirmed = dialog.yesno(
+                self._t('ausis'),
+                line1=self._t('remove_confirm_msg'),
+                line2=self._t('are_you_sure'),
+                yeslabel=self._t('yes'),
+                nolabel=self._t('no')
+            )
+            if confirmed:
+                self.db.remove_album_bookmarks(album_id)
+                kodi.executebuiltin('Container.Refresh()')
+        else:
+            self.log('No audiobook ID provided!', level=kodi.LOGERROR)
 
 
 def main():

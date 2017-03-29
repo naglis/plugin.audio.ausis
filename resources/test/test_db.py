@@ -122,3 +122,13 @@ class TestAusisDatabase(unittest.TestCase):
                 db.add_bookmark(*bookmark[1:-1])
             album_bookmarks = db.get_album_bookmarks(2)
             self.assertEqual(len(album_bookmarks), 2)
+
+    def test_remove_album_bookmarks(self):
+        remove_album_id, other_album_id = 2, 4
+        with self.db as db:
+            for bookmark in BOOKMARK_DATA:
+                db.add_bookmark(*bookmark[1:-1])
+            removed = db.remove_album_bookmarks(remove_album_id)
+            self.assertTrue(removed)
+            self.assertFalse(db.get_album_bookmarks(remove_album_id))
+            self.assertEqual(len(db.get_album_bookmarks(other_album_id)), 1)

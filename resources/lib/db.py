@@ -174,3 +174,13 @@ class AusisDatabase(Database):
             date_added DESC
         ;'''
         return wrap_bookmark(self.cr.execute(query, locals()).fetchall())
+
+    def remove_album_bookmarks(self, album_id):
+        query = '''
+        DELETE FROM
+            bookmark
+        WHERE
+            album_id = :album_id
+        ;'''
+        self.cr.execute(query, locals())
+        return self.cr.connection.total_changes >= 1

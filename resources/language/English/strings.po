@@ -18,8 +18,28 @@ msgctxt "#30001"
 msgid "Audiobook directory"
 msgstr ""
 
-msgctxt "#30008"
+msgctxt "#30002"
+msgid "Remove bookmarks"
+msgstr ""
+
+msgctxt "#30003"
 msgid "ausis"
+msgstr ""
+
+msgctxt "#30004"
+msgid "You are about to remove the bookmarks of this album."
+msgstr ""
+
+msgctxt "#30005"
+msgid "Are you sure you want to continue?"
+msgstr ""
+
+msgctxt "#30006"
+msgid "Yes"
+msgstr ""
+
+msgctxt "#30007"
+msgid "No"
 msgstr ""
 
 msgctxt "#30013"
@@ -28,14 +48,6 @@ msgstr ""
 
 msgctxt "#30015"
 msgid "Resume furthest: %s (%s)"
-msgstr ""
-
-msgctxt "#30016"
-msgid "You are about to remove the audiobook: \"%s\" from your library."
-msgstr ""
-
-msgctxt "#30017"
-msgid "Are you sure you want to continue?"
 msgstr ""
 
 msgctxt "#30018"
