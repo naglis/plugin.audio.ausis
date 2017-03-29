@@ -18,9 +18,29 @@ msgctxt "#30001"
 msgid "Audiobook directory"
 msgstr "Audioknygų aplankas"
 
-msgctxt "#30008"
+msgctxt "#30002"
+msgid "Remove bookmarks"
+msgstr "Pašalinti žymeles"
+
+msgctxt "#30003"
 msgid "ausis"
 msgstr "ausis"
+
+msgctxt "#30004"
+msgid "You are about to remove the bookmarks of this album."
+msgstr "Ketinate pašalinti šio albumo žymeles."
+
+msgctxt "#30005"
+msgid "Are you sure you want to continue?"
+msgstr "Ar tikrai norite tęsti?"
+
+msgctxt "#30006"
+msgid "Yes"
+msgstr "Taip"
+
+msgctxt "#30007"
+msgid "No"
+msgstr "Ne"
 
 msgctxt "#30013"
 msgid "Resume latest: %s (%s)"
@@ -29,14 +49,6 @@ msgstr "Tęsti paskiausią: %s (%s)"
 msgctxt "#30015"
 msgid "Resume furthest: %s (%s)"
 msgstr "Tęsti tolimiausią: %s (%s)"
-
-msgctxt "#30016"
-msgid "You are about to remove the audiobook: \"%s\" from your library."
-msgstr "Ketinate pašalinti audioknygą: \"%s\" iš bibliotekos."
-
-msgctxt "#30017"
-msgid "Are you sure you want to continue?"
-msgstr "Ar tikrai norite tęsti?"
 
 msgctxt "#30018"
 msgid "Remove"
