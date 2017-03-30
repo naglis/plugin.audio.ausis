@@ -1,5 +1,7 @@
 [run]
-source = resources/
+source =
+    .
+    resources/
 
 [report]
 omit = resources/tests/*
