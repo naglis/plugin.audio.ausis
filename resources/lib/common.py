@@ -9,7 +9,6 @@ import random
 import urllib
 
 import xbmc as kodi
-import xbmcgui as kodigui
 import xbmcplugin as kodiplugin
 
 import utils
