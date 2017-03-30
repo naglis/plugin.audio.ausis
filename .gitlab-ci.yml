@@ -13,4 +13,4 @@ test:2.7:
 
 qa:
     stage: qa
-    script: flake8 '*.py' resources/
+    script: flake8 *.py resources/
