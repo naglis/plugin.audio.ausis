@@ -1,5 +1,8 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
+import os
 import sys
-from os.path import dirname as d
-from os.path import abspath, join
-root_dir = d(d(abspath(__file__)))
+
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(root_dir)
