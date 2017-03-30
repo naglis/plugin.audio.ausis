@@ -68,6 +68,7 @@ class Ausis(common.KodiPlugin):
                     'duration',
                     'thumbnail',
                     'album',
+                    'track',
                 ],
             ).get('result', {}).get('songdetails', {})
             if not song_info:
@@ -85,6 +86,7 @@ class Ausis(common.KodiPlugin):
                 'artist': u', '.join(song_info.get('artist', [])),
                 'album': song_info.get('album'),
                 'genre': 'Audiobook',
+                'tracknumber': song_info.get('track'),
             })
             # last_played = utils.parse_datetime_str(audiobook.date_last_played)
             # li.setInfo('video', {
