@@ -1,5 +1,5 @@
 [run]
-include = resources/*
+source = resources/
 
 [report]
 omit = resources/tests/*
