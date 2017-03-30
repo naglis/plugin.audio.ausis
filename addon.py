@@ -88,22 +88,24 @@ class Ausis(common.KodiPlugin):
                 'genre': 'Audiobook',
                 'tracknumber': song_info.get('track'),
             })
-            # last_played = utils.parse_datetime_str(audiobook.date_last_played)
-            # li.setInfo('video', {
-                # 'dateadded': audiobook.date_added.strftime(
-                    # common.DATETIME_FORMAT),
-                # 'lastplayed': last_played.strftime(
-                    # common.DATETIME_FORMAT) if last_played else None,
-            # })
-            # if audiobook.fanart:
-                # li.setProperty(
-                    # 'Fanart_Image',
-                    # os.path.join(directory, audiobook.fanart_path),
-                # )
-            # li.addContextMenuItems([
-                # (self._t('remove'), 'RunPlugin(%s)' % self._build_url(
-                    # mode='remove', audiobook_id=audiobook.id)),
-            # ])
+            '''
+            last_played = utils.parse_datetime_str(audiobook.date_last_played)
+            li.setInfo('video', {
+                'dateadded': audiobook.date_added.strftime(
+                    common.DATETIME_FORMAT),
+                'lastplayed': last_played.strftime(
+                    common.DATETIME_FORMAT) if last_played else None,
+            })
+            if audiobook.fanart:
+                li.setProperty(
+                    'Fanart_Image',
+                    os.path.join(directory, audiobook.fanart_path),
+                )
+            li.addContextMenuItems([
+                (self._t('remove'), 'RunPlugin(%s)' % self._build_url(
+                    mode='remove', audiobook_id=audiobook.id)),
+            ])
+            '''
             kodiplugin.addDirectoryItem(
                 handle=self._handle,
                 url=url,
@@ -136,17 +138,25 @@ class Ausis(common.KodiPlugin):
             self.log('%s' % album_info)
             if not album_info:
                 return
-            # song_info = common.json_rpc(
-                # 'AudioLibrary.GetSongDetails', songid=bookmark.song_id, properties=[
-                    # 'artist', 'title', 'duration', 'thumbnail', 'album']).get('result', {}).get('songdetails', {})
-            # if not song_info:
-                # continue
+
+            '''
+            song_info = common.json_rpc(
+                'AudioLibrary.GetSongDetails',
+                songid=bookmark.song_id,
+                properties=[
+                    'artist',
+                    'title',
+                    'duration',
+                    'thumbnail',
+                    'album'
+                ]
+            ).get('result', {}).get('songdetails', {})
+            if not song_info:
+                continue
+            '''
 
             li = kodigui.ListItem(
                 album_info['title'],
-                # u'{album} - {title} [{bookmark.name}] ({bookmark.position}s)'.format(
-                    # bookmark=bookmark, **song_info),
-                # iconImage=song_info.get('thumbnail'),
                 iconImage=album_info.get('thumbnail'),
             )
             li.setInfo('music', {
@@ -164,22 +174,24 @@ class Ausis(common.KodiPlugin):
                     ),
                 ),
             ])
-            # last_played = utils.parse_datetime_str(audiobook.date_last_played)
-            # li.setInfo('video', {
-                # 'dateadded': audiobook.date_added.strftime(
-                    # common.DATETIME_FORMAT),
-                # 'lastplayed': last_played.strftime(
-                    # common.DATETIME_FORMAT) if last_played else None,
-            # })
-            # if audiobook.fanart:
-                # li.setProperty(
-                    # 'Fanart_Image',
-                    # os.path.join(directory, audiobook.fanart_path),
-                # )
-            # li.addContextMenuItems([
-                # (self._t('remove'), 'RunPlugin(%s)' % self._build_url(
-                    # mode='remove', audiobook_id=audiobook.id)),
-            # ])
+            '''
+            last_played = utils.parse_datetime_str(audiobook.date_last_played)
+            li.setInfo('video', {
+                'dateadded': audiobook.date_added.strftime(
+                    common.DATETIME_FORMAT),
+                'lastplayed': last_played.strftime(
+                    common.DATETIME_FORMAT) if last_played else None,
+            })
+            if audiobook.fanart:
+                li.setProperty(
+                    'Fanart_Image',
+                    os.path.join(directory, audiobook.fanart_path),
+                )
+            li.addContextMenuItems([
+                (self._t('remove'), 'RunPlugin(%s)' % self._build_url(
+                    mode='remove', audiobook_id=audiobook.id)),
+            ])
+            '''
             kodiplugin.addDirectoryItem(
                 handle=self._handle,
                 url=url,
