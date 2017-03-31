@@ -6,7 +6,7 @@ import operator
 import sqlite3
 import time
 
-DB_FILE_NAME = 'ausis.sqlite'
+DB_FILE_NAME = 'Ausis.db'
 
 BOOKMARK_FIELDS = [
     'id',
