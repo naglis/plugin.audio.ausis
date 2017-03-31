@@ -34,7 +34,7 @@ def encode_arg(arg):
 
 def encode_values(d):
     '''Given a dict d, returns a new dict with encoded keys and values.'''
-    return {encode_arg(k): encode_arg(v) for k, v in d.iteritems()}
+    return {encode_arg(k): encode_arg(v) for k, v in d.items()}
 
 
 def dump_data(data):
@@ -51,7 +51,7 @@ def parse_query(query, defaults=None):
 
     d = defaults.copy()
     args = urlparse.parse_qs(query)
-    for key, values in args.iteritems():
+    for key, values in args.items():
         if len(values) == 1:
             d[decode_arg(key)] = decode_arg(first_of(values))
         else:
