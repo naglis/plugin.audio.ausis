@@ -42,3 +42,13 @@ def test_parse_query_single_value(query, args):
 ])
 def test_parse_datetime_str(string, expected):
     assert utils.parse_datetime_str(string) == expected
+
+
+@pytest.mark.parametrize('input, expected', [
+    ({u'a': u'b'}, {'a': 'b'}),
+    ({'a': u'b'}, {'a': 'b'}),
+    ({u'a': 'b'}, {'a': 'b'}),
+    ({'a': 'b'}, {'a': 'b'}),
+])
+def test_encode_values(input, expected):
+    assert utils.encode_values(input) == expected

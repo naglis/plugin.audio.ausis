@@ -34,7 +34,7 @@ def encode_arg(arg):
 
 def encode_values(d):
     '''Given a dict d, returns a new dict with encoded keys and values.'''
-    return dict([(encode_arg(k), encode_arg(v)) for k, v in d.iteritems()])
+    return {encode_arg(k): encode_arg(v) for k, v in d.iteritems()}
 
 
 def dump_data(data):
