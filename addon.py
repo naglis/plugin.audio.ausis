@@ -280,28 +280,37 @@ class Ausis(common.KodiPlugin):
                     'albumid': bookmark.album_id,
                 },
             ).get('result', {}).get('songs', []), key=by_file)
-            self.log('%s' % album_songs)
 
             playlist = kodi.PlayList(kodi.PLAYLIST_MUSIC)
             playlist.clear()
 
-            playlist_pos, offset = -1, -1
+            playlist_pos = -1
             for idx, item in enumerate(album_songs):
-                if item['songid'] == bookmark.song_id:
-                    offset = max(0.0, bookmark.position)
-                    playlist_pos = idx
+                offset = None
+
                 li = kodigui.ListItem(item.get('title', ''))
-                # TODO(naglis): add more fields
-                # TODO(naglis): make nicer
-                li.setInfo('music', {
-                    'comment': common.dump_comment({'offset': offset}),
+
+                if item['songid'] == bookmark.song_id:
+                    playlist_pos = idx
+                    offset = max(0.0, bookmark.position)
+                    li.setProperty('StartOffset', '{0:.2f}'.format(offset))
+
+                music_info = {
                     'year': item.get('year'),
                     'artist': u'\n'.join(item.get('artist', [])),
                     'duration': item.get('duration'),
                     'title': item.get('title'),
-                })
-                if offset > 0.0:
-                    li.setProperty('StartOffset', '{0:.2f}'.format(offset))
+                }
+
+                if offset is not None:
+                    music_info.update({
+                        'comment': common.dump_comment({'offset': offset}),
+                    })
+
+                # TODO(naglis): add more fields
+                # TODO(naglis): make nicer
+                li.setInfo('music', music_info)
+
                 playlist.add(item['file'], li)
 
             kodi.Player().play(playlist, startpos=playlist_pos)
