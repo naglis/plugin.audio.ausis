@@ -46,17 +46,15 @@ class AudioBookPlayer(kodi.Player):
         playing audiofile.
         '''
         try:
+            position = self.getTime()
             if name == 'started':
-                position = 0.0
-            else:
-                position = self.getTime()
+                position = max(0.0, position)
             current = get_current_info()
             if not current:
                 return
             song_id, album_id = map(current.get, ('id', 'albumid'))
             if not (song_id and album_id):
                 return
-            kodi.log('%s' % current)
             offset = self._get_offset()
         except RuntimeError:
             kodi.log('Runtime error')
@@ -64,8 +62,8 @@ class AudioBookPlayer(kodi.Player):
             with AusisDatabase(DB_PATH) as db:
                 bookmark_id = db.add_bookmark(
                     name, song_id, album_id, offset + position)
-                kodi.log('Added bookmark: %d at: %s' % (
-                    bookmark_id, position))
+                kodi.log('Added bookmark of type: "%s" with ID %d at: %s' % (
+                    name, bookmark_id, offset + position))
 
     def onPlayBackStarted(self):
         self._bookmark('started')

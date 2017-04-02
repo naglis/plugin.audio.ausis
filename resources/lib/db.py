@@ -105,12 +105,14 @@ class AusisDatabase(Database):
                 UPDATE
                     bookmark
                 SET
+                    position = :position,
                     date_added = :date_added
                 WHERE
                     id = :id
                 ;'''
                 self.cr.execute(q, {
                     'id': bookmark.id,
+                    'position': position,
                     'date_added': now,
                 })
                 return bookmark.id
