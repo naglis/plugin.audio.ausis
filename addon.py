@@ -88,14 +88,13 @@ class Ausis(common.KodiPlugin):
                 'genre': 'Audiobook',
                 'tracknumber': song_info.get('track'),
             })
-            date_added = datetime.datetime.fromtimestamp(bookmark.date_added)
-            # li.setInfo('video', {
-                # 'dateadded': date_added.strftime(common.DATETIME_FORMAT),
-            # })
-
-            # 'lastplayed': last_played.strftime(
-            # common.DATETIME_FORMAT) if last_played else None,
             '''
+            li.setInfo('video', {
+                'dateadded': date_added.strftime(common.DATETIME_FORMAT),
+            })
+
+            'lastplayed': last_played.strftime(
+            common.DATETIME_FORMAT) if last_played else None,
             if audiobook.fanart:
                 li.setProperty(
                     'Fanart_Image',
