@@ -48,16 +48,6 @@ class Ausis(common.KodiPlugin):
     def db(self):
         return self._db
 
-    def _prepare_bookmark_listitem(self, string_id, bookmark):
-        url = self._build_url(mode='resume', bookmark_id=bookmark.id)
-        position = utils.format_duration(bookmark.position)
-        li = kodigui.ListItem(
-            common.italic(
-                self._t(string_id) % (bookmark.audiofile.title, position)
-            )
-        )
-        return dict(handle=self._handle, url=url, listitem=li, isFolder=False)
-
     def mode_main(self, args):
         albums = self.db.get_albums()
 

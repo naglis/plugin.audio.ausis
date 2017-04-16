@@ -34,10 +34,6 @@ def get_db_path(db_name):
     return os.path.join(kodi_db_dir, db_name)
 
 
-def italic(s):
-    return '[I]{0:}[/I]'.format(s)
-
-
 def parse_comment(comment):
     if comment.startswith('ausis:'):
         return utils.load_data(comment[len('ausis:'):])
