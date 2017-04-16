@@ -1,0 +1,18 @@
+language: python
+sudo: false
+
+matrix:
+  include:
+    - python: 2.7
+      env: {TOX_ENV: py27}
+    - python: 2.7
+      env: {TOX_ENV: qa}
+
+install:
+  - pip install tox
+
+script:
+  - tox -e $TOX_ENV
+
+after_success:
+  - "[ ! -z $COVERAGE ] && bash <(curl -s https://codecov.io/bash) || true"
