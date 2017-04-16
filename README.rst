@@ -12,6 +12,9 @@ ausis
 
 ausis is an audiobook support plugin for `Kodi`_.
 
+.. note:: Currently only Kodi 17 (Krypton) on GNU/Linux is supported.
+   It might work on other platforms/Kodi versions, but it is not tested.
+
 How it works?
 #############
 
