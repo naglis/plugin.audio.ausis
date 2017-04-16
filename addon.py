@@ -101,7 +101,7 @@ class Ausis(common.KodiPlugin):
                     album_id=bookmark.album_id,
                 ),
             )]
-            li.addContextMenuItems(context_menu)
+            li.addContextMenuItems(items=context_menu)
 
             kodiplugin.addDirectoryItem(
                 handle=self._handle,
