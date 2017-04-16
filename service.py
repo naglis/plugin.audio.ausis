@@ -56,8 +56,7 @@ class AudioBookPlayer(kodi.Player):
         '''
 
         audiobook_dir = utils.decode_arg(
-            addon.getSetting('audiobook_directory'),
-            encoding=utils.FILESYSTEM_ENCODING)
+            addon.getSetting('audiobook_directory'))
         try:
             position = self.getTime()
 

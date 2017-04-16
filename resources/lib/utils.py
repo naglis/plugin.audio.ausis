@@ -5,14 +5,10 @@ import base64
 import json
 import operator
 import os
-import sys
 import urlparse
 
 
 first_of = operator.itemgetter(0)
-FILESYSTEM_ENCODING = sys.getfilesystemencoding()
-if FILESYSTEM_ENCODING is None:
-    FILESYSTEM_ENCODING = sys.getdefaultencoding()
 
 
 def decode_arg(arg, encoding='utf-8'):
