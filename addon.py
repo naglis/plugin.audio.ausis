@@ -197,7 +197,7 @@ class Ausis(common.KodiPlugin):
 
                 music_info = {
                     'year': item.get('year'),
-                    'artist': u'\n'.join(item.get('artist', [])),
+                    'artist': u', '.join(item.get('artist', [])),
                     'duration': item.get('duration'),
                     'title': item.get('title'),
                 }
