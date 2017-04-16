@@ -2,5 +2,6 @@
 <settings>
     <category label="30000">
         <setting id="audiobook_directory" label="30001" type="folder"/>
+        <setting id="on_audiobook_click" label="30007" type="enum" lvalues="30008|30009"/>
     </category>
 </settings>

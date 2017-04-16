@@ -9,32 +9,14 @@ import random
 import urllib
 
 import xbmc as kodi
-import xbmcplugin as kodiplugin
 
 import utils
 
 
-AUDIOFILE_SORT_METHODS = (
-    kodiplugin.SORT_METHOD_FILE,
-    kodiplugin.SORT_METHOD_FULLPATH,
-    kodiplugin.SORT_METHOD_NONE,
-    kodiplugin.SORT_METHOD_TITLE,
-    kodiplugin.SORT_METHOD_TITLE_IGNORE_THE,
-    kodiplugin.SORT_METHOD_TRACKNUM,
-    kodiplugin.SORT_METHOD_UNSORTED,
-)
-AUDIOBOOK_SORT_METHODS = (
-    kodiplugin.SORT_METHOD_DATEADDED,
-    kodiplugin.SORT_METHOD_LASTPLAYED,
-    kodiplugin.SORT_METHOD_NONE,
-    kodiplugin.SORT_METHOD_TITLE,
-    kodiplugin.SORT_METHOD_TITLE_IGNORE_THE,
-    kodiplugin.SORT_METHOD_UNSORTED,
-)
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 
-def json_rpc(method, raise_error=False, **params):
+def json_rpc(method, **params):
     values = {
         'jsonrpc': '2.0',
         'method': method,
@@ -45,13 +27,6 @@ def json_rpc(method, raise_error=False, **params):
             'params': params,
         })
     return json.loads(kodi.executeJSONRPC(json.dumps(values)))
-
-
-def get_audio_player_id():
-    resp = json_rpc('Player.GetActivePlayers')
-    for player in resp.get('result', []):
-        if player.get('type') == 'audio':
-            return player['playerid']
 
 
 def get_db_path(db_name):

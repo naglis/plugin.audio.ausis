@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import datetime
-
 import pytest
 
 from lib import utils
@@ -27,21 +25,6 @@ def test_format_duration(input, output):
 ])
 def test_parse_query_single_value(query, args):
     assert utils.parse_query(query) == args
-
-
-@pytest.mark.parametrize('string, expected', [
-    ('', None),
-    ('foo', None),
-    (None, None),
-    ('1-2-3', None),
-    ('2016-01-01', datetime.datetime(2016, 1, 1)),
-    ('2016-01-01 12:04:05.123456',
-        datetime.datetime(2016, 1, 1, 12, 4, 5, 123456)),
-    ('12:04',
-        datetime.datetime(1900, 1, 1, 12, 4)),
-])
-def test_parse_datetime_str(string, expected):
-    assert utils.parse_datetime_str(string) == expected
 
 
 @pytest.mark.parametrize('input, expected', [
