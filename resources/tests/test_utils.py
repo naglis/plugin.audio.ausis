@@ -35,3 +35,11 @@ def test_parse_query_single_value(query, args):
 ])
 def test_encode_values(input, expected):
     assert utils.encode_values(input) == expected
+
+
+@pytest.mark.parametrize('filename, directory, expected', [
+    ('/home/foo/ab/test/test.mp3', '/home/foo/ab', True),
+    ('/home/foo/abc/test/test.mp3', '/home/foo/ab', False),
+])
+def test_in_directory(filename, directory, expected):
+    assert utils.in_directory(filename, directory) == expected

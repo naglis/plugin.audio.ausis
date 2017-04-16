@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import xbmc as kodi
 import xbmcaddon as kodiaddon
 
-from resources.lib import common
+from resources.lib import common, utils
 from resources.lib.db import (
     AusisDatabase,
     DB_FILE_NAME,
@@ -55,7 +55,9 @@ class AudioBookPlayer(kodi.Player):
         playing audiofile.
         '''
 
-        audiobook_dir = addon.getSetting('audiobook_directory')
+        audiobook_dir = utils.decode_arg(
+            addon.getSetting('audiobook_directory'),
+            encoding=utils.FILESYSTEM_ENCODING)
         try:
             position = self.getTime()
 
@@ -75,11 +77,11 @@ class AudioBookPlayer(kodi.Player):
 
             # File not from the audiobook directory.
             if (audiobook_dir and filename and not
-                    filename.startswith(audiobook_dir)):
+                    utils.in_directory(filename, audiobook_dir)):
                 return
             offset = self._get_offset()
         except RuntimeError:
-            kodi.log('Runtime error')
+            kodi.log('Runtime error', level=kodi.LOGERROR)
         else:
             with AusisDatabase(DB_PATH) as db:
                 bookmark_id = db.add_bookmark(

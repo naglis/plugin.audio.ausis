@@ -4,15 +4,20 @@ from __future__ import unicode_literals
 import base64
 import json
 import operator
+import os
+import sys
 import urlparse
 
 
 first_of = operator.itemgetter(0)
+FILESYSTEM_ENCODING = sys.getfilesystemencoding()
+if FILESYSTEM_ENCODING is None:
+    FILESYSTEM_ENCODING = sys.getdefaultencoding()
 
 
-def decode_arg(arg):
+def decode_arg(arg, encoding='utf-8'):
     if isinstance(arg, str):
-        arg = arg.decode('utf-8')
+        arg = arg.decode(encoding)
     return arg
 
 
@@ -56,3 +61,14 @@ def format_duration(s):
     m, s = divmod(s, 60)
     h, m = divmod(m, 60)
     return '%s%d:%02d:%02d' % (sign, h, m, s)
+
+
+def in_directory(filename, directory):
+    '''
+    Check if a file is somewhere inside a directory.
+
+    Based on http://stackoverflow.com/q/3812849/
+    '''
+    filename, directory = map(os.path.realpath, [filename, directory])
+    directory = os.path.join(directory, '')
+    return os.path.commonprefix([filename, directory]) == directory
