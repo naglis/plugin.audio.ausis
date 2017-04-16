@@ -39,7 +39,7 @@ msgid "No"
 msgstr "Ne"
 
 msgctxt "#30007"
-msgid "When I click on an audiobook in Ausis"
+msgid "When I click on an audiobook"
 msgstr "Atveriant audioknygą"
 
 msgctxt "#30008"
