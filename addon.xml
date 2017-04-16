@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.audio.ausis" name="ausis" version="0.1.3" provider-name="Naglis Jonaitis">
+<addon id="plugin.audio.ausis" name="ausis" version="1.0.0~beta" provider-name="Naglis Jonaitis">
     <requires>
-        <import addon="xbmc.python" version="2.20.0"/>
+        <import addon="xbmc.python" version="2.25.0"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="addon.py">
         <provides>audio</provides>
@@ -9,9 +9,18 @@
     <extension point="xbmc.service" library="service.py" start="login"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Audiobook support plugin for Kodi</summary>
-        <description lang="en">Can't live without audiobooks? Love Kodi? Now these two awesome things can go together!</description>
+        <summary lang="lt">Kodi audioknygų perklausos pratęsimo palaikymas</summary>
+        <description lang="en">This addon assumes that your audiobooks are regular albums in your Kodi music library. It then tracks playback events and stores bookmarks with playback position for each album. Playback of an audiobook album can then be resumed from a selected bookmark.</description>
+        <description lang="lt">Šis priedas daro prielaidą, jog jūsų audioknygos yra tarp albumų Kodi muzikos bibliotekoje ir seka atkūrimo įvykius bei išsaugo atkūrimo pozicijos žymeles kiekvienam albumui. Audioknygos perklausą tuomet galima pratęsti nuo pasirinktos žymelės.</description>
         <platform>linux windx</platform>
         <license>GNU General Public License v2 (GPLv2)</license>
-        <source>https://gitlab.com/naglis/plugin.audio.ausis</source>
+        <source>https://github.com/naglis/plugin.audio.ausis</source>
+        <assets>
+            <icon>resources/icon.png</icon>
+            <fanart>resources/fanart.jpg</fanart>
+            <screenshot>resources/screenshot-01.png</screenshot>>
+            <screenshot>resources/screenshot-02.png</screenshot>>
+            <screenshot>resources/screenshot-03.png</screenshot>>
+        </assets>
     </extension>
 </addon>
