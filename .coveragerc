@@ -1,7 +1,6 @@
 [run]
 source =
-    addon.py
-    service.py
+    .
     resources/
 
 [report]
