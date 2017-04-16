@@ -1,18 +1,15 @@
 language: python
+python:
+  - "2.7"
 sudo: false
 
-matrix:
-  include:
-    - python: 2.7
-      env: {TOX_ENV: py27, COVERAGE: 1}
-    - python: 2.7
-      env: {TOX_ENV: qa}
-
 install:
-  - pip install tox
+  - pip install --requirement test_requirements.txt
+  - pip install codecov
 
 script:
-  - tox -e $TOX_ENV
+  - py.test --cov
+  - flake8 *.py resources/
 
 after_success:
-  - "[ ! -z $COVERAGE ] && bash <(curl -s https://codecov.io/bash) || true"
+  - codecov
