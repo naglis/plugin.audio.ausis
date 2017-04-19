@@ -10,6 +10,10 @@ ausis
     :target: https://codecov.io/gh/naglis/plugin.audio.ausis
     :alt: Code coverage
 
+.. image:: https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg
+   :target: https://saythanks.io/to/naglis
+   :alt: Say Thanks
+
 ausis is an audiobook support plugin for `Kodi`_.
 
 .. note:: Currently only Kodi 17 (Krypton) on GNU/Linux is supported.
