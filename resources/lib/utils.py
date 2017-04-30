@@ -5,6 +5,7 @@ import base64
 import json
 import operator
 import os
+import urllib
 import urlparse
 
 
@@ -60,7 +61,7 @@ def format_duration(s):
 
 
 def remove_scheme(path):
-    return urlparse.urlparse(path).path
+    return urlparse.urlparse(urllib.unquote(path)).path
 
 
 def in_directory(filename, directory):
