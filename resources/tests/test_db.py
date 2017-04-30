@@ -93,7 +93,7 @@ def test_exception_inside_with_statement_rollbacks_changes(temp_db):
 
 
 @pytest.mark.parametrize('db, table', [
-    (ausis_mem_db(), 'bookmark')
+    (ausis_mem_db(), 'bookmark'),
 ])
 def test_bookmark_table_is_created(db, table):
     with db:
@@ -105,7 +105,7 @@ def test_add_bookmark(ausis_mem_db, one_bookmark):
     with ausis_mem_db as db:
         bookmark_id = db.add_bookmark(*data)
         new_bookmark = database.wrap_bookmark(db.cr.execute(
-            'SELECT * FROM bookmark WHERE id = :bookmark_id;', locals()
+            'SELECT * FROM bookmark WHERE id = :bookmark_id;', locals(),
             ).fetchone())
 
     assert one_bookmark.song_id == new_bookmark.song_id

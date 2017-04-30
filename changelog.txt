@@ -1,3 +1,7 @@
+v1.0.0~beta3 (2017-04-30)
+- Fixed bug with tracking bookmarks in archives
+- Other small improvements
+
 v1.0.0~beta2 (2017-04-16)
 - Removed use of FILESYSTEM_ENCODING
 

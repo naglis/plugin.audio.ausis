@@ -5,6 +5,7 @@ import base64
 import json
 import operator
 import os
+import urllib
 import urlparse
 
 
@@ -59,12 +60,17 @@ def format_duration(s):
     return '%s%d:%02d:%02d' % (sign, h, m, s)
 
 
+def remove_scheme(path):
+    return urlparse.urlparse(urllib.unquote(path)).path
+
+
 def in_directory(filename, directory):
     '''
     Check if a file is somewhere inside a directory.
 
     Based on http://stackoverflow.com/q/3812849/
     '''
+    filename = remove_scheme(filename)
     filename, directory = map(os.path.realpath, [filename, directory])
     directory = os.path.join(directory, '')
     return os.path.commonprefix([filename, directory]) == directory

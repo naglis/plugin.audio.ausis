@@ -56,7 +56,7 @@ class KodiPlugin(object):
     def _build_url(self, **kwargs):
         '''Build and returns a plugin  URL.'''
         return '%s?%s' % (
-            self._base_url, urllib.urlencode(utils.encode_values(kwargs))
+            self._base_url, urllib.urlencode(utils.encode_values(kwargs)),
         )
 
     def _t(self, string_id):

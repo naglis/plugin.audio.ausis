@@ -22,17 +22,20 @@ duration_getter = operator.attrgetter('duration')
 
 SQL_SCHEMA = '''
 CREATE TABLE IF NOT EXISTS bookmark (
-    id INTEGER NOT NULL,
-    name VARCHAR(255),
-    song_id INTEGER NOT NULL,
-    album_id INTEGER NOT NULL,
-    position REAL NOT NULL,
-    date_added INTEGER DEFAULT 0,
+    id         INTEGER      NOT NULL,
+    name       VARCHAR(255),
+    song_id    INTEGER      NOT NULL,
+    album_id   INTEGER      NOT NULL,
+    position   REAL         NOT NULL,
+    date_added INTEGER      DEFAULT 0,
     PRIMARY KEY (id)
 );
-CREATE INDEX IF NOT EXISTS bookmark_name_idx ON bookmark(name);
-CREATE INDEX IF NOT EXISTS bookmark_song_idx ON bookmark(song_id);
-CREATE INDEX IF NOT EXISTS bookmark_album_idx ON bookmark(album_id);
+CREATE INDEX IF NOT EXISTS bookmark_name_idx
+                        ON bookmark(name);
+CREATE INDEX IF NOT EXISTS bookmark_song_idx
+                        ON bookmark(song_id);
+CREATE INDEX IF NOT EXISTS bookmark_album_idx
+                        ON bookmark(album_id);
 '''
 
 
@@ -86,30 +89,20 @@ class AusisDatabase(Database):
         if name == 'started':
             bookmark = None
             q = '''
-            SELECT
-                *
-            FROM
-                bookmark
-            WHERE
-                name = :name
-            AND
-                song_id = :song_id
-            AND
-                album_id = :album_id
-            ;'''
+SELECT *
+  FROM bookmark
+ WHERE name = :name
+   AND song_id = :song_id
+   AND album_id = :album_id;'''
             self.cr.execute(q, locals())
             bookmark = wrap_bookmark(self.cr.fetchone())
 
             if bookmark:
                 q = '''
-                UPDATE
-                    bookmark
-                SET
-                    position = :position,
-                    date_added = :date_added
-                WHERE
-                    id = :id
-                ;'''
+UPDATE bookmark
+   SET position = :position,
+       date_added = :date_added
+ WHERE id = :id;'''
                 self.cr.execute(q, {
                     'id': bookmark.id,
                     'position': position,
@@ -118,33 +111,17 @@ class AusisDatabase(Database):
                 return bookmark.id
 
         query = '''
-        INSERT INTO bookmark (
-            name,
-            song_id,
-            album_id,
-            position,
-            date_added
-        ) VALUES (
-            :name,
-            :song_id,
-            :album_id,
-            :position,
-            :now
-        );'''
+INSERT INTO bookmark (name, song_id, album_id, position, date_added)
+     VALUES (:name, :song_id, :album_id, :position, :now);'''
         self.cr.execute(query, locals())
         return self.cr.lastrowid
 
     def get_albums(self):
         query = '''
-        SELECT
-            *
-        FROM
-            bookmark
-        GROUP BY
-            album_id
-        ORDER BY
-            date_added DESC
-        ;'''
+  SELECT *
+    FROM bookmark
+GROUP BY album_id
+ORDER BY date_added DESC;'''
         return wrap_bookmark(self.cr.execute(query).fetchall())
 
     def get_all_bookmarks(self):
@@ -153,36 +130,24 @@ class AusisDatabase(Database):
 
     def get_bookmark(self, bookmark_id):
         query = '''
-        SELECT
-            *
-        FROM
-            bookmark
-        WHERE
-            id = :bookmark_id
-        ;'''
+SELECT *
+  FROM bookmark
+ WHERE id = :bookmark_id;'''
         self.cr.execute(query, locals())
         result = wrap_bookmark(self.cr.fetchone())
         return result if result else None
 
     def get_album_bookmarks(self, album_id):
         query = '''
-        SELECT
-            *
-        FROM
-            bookmark
-        WHERE
-            album_id = :album_id
-        ORDER BY
-            date_added DESC
-        ;'''
+  SELECT *
+    FROM bookmark
+   WHERE album_id = :album_id
+ORDER BY date_added DESC;'''
         return wrap_bookmark(self.cr.execute(query, locals()).fetchall())
 
     def remove_album_bookmarks(self, album_id):
         query = '''
-        DELETE FROM
-            bookmark
-        WHERE
-            album_id = :album_id
-        ;'''
+DELETE FROM bookmark
+      WHERE album_id = :album_id;'''
         self.cr.execute(query, locals())
         return self.cr.connection.total_changes >= 1

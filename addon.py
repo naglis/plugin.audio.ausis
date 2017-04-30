@@ -229,7 +229,7 @@ class Ausis(common.KodiPlugin):
             line1=self._t('remove_confirm_msg'),
             line2=self._t('are_you_sure'),
             yeslabel=self._t('yes'),
-            nolabel=self._t('no')
+            nolabel=self._t('no'),
         )
         if confirmed:
             self.db.remove_album_bookmarks(album_id)
